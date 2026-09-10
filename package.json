@@ -1,0 +1,37 @@
+{
+  "name": "focus-existing-tab",
+  "version": "1.0.0",
+  "description": "Chrome MV3 extension: focus an already open tab instead of loading the same URL twice.",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=95 --test-coverage-functions=100 'test/**/*.test.js'",
+    "test:e2e": "node test/e2e/smoke.js",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc -p jsconfig.json",
+    "check": "pnpm lint && pnpm typecheck && pnpm coverage",
+    "icons": "node scripts/make-icons.js",
+    "screenshots": "node scripts/screenshots.js",
+    "package": "bash scripts/package.sh",
+    "release": "node scripts/release.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alvaromr/focus-existing-tab.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/chrome": "^0.2.8",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "typescript": "^7.0.2"
+  }
+}

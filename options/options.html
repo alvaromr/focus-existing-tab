@@ -1,0 +1,251 @@
+<!doctype html>
+<html data-i18n-title="optTitle">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <header class="page-header">
+        <img src="../icons/icon48.png" alt="" width="32" height="32" />
+        <div>
+          <h1 data-i18n="optTitle"></h1>
+          <p class="muted" data-i18n="optIntro"></p>
+        </div>
+      </header>
+
+      <section>
+        <h2 data-i18n="secGeneral"></h2>
+        <label class="row" data-help="helpEnabled"
+          ><input type="checkbox" name="enabled" /> <span data-i18n="fEnabled"></span
+        ></label>
+        <fieldset class="row" data-help="helpMode">
+          <legend data-i18n="fMode"></legend>
+          <label><input type="radio" name="mode" value="blacklist" /> <span data-i18n="modeBlacklist"></span></label>
+          <label><input type="radio" name="mode" value="whitelist" /> <span data-i18n="modeWhitelist"></span></label>
+        </fieldset>
+        <label class="row" data-help="helpCloseDuplicate"
+          ><input type="checkbox" name="closeDuplicate" /> <span data-i18n="fCloseDuplicate"></span
+        ></label>
+        <label class="row" data-help="helpFocusWindow"
+          ><input type="checkbox" name="focusWindow" /> <span data-i18n="fFocusWindow"></span
+        ></label>
+        <label class="row select" data-help="helpInTab">
+          <span data-i18n="fInTab"></span>
+          <select name="inTabNavigation">
+            <option value="back" data-i18n="inTabBack"></option>
+            <option value="focus" data-i18n="inTabFocus"></option>
+            <option value="close" data-i18n="inTabClose"></option>
+            <option value="ignore" data-i18n="inTabIgnore"></option>
+          </select>
+        </label>
+        <label class="row select" data-help="helpScope">
+          <span data-i18n="fScope"></span>
+          <select name="scope">
+            <option value="all" data-i18n="scopeAll"></option>
+            <option value="window" data-i18n="scopeWindow"></option>
+          </select>
+        </label>
+        <label class="row select" data-help="helpPinned">
+          <span data-i18n="fPinned"></span>
+          <select name="pinnedPolicy">
+            <option value="protect" data-i18n="pinnedProtect"></option>
+            <option value="ignore" data-i18n="pinnedIgnore"></option>
+            <option value="normal" data-i18n="pinnedNormal"></option>
+          </select>
+        </label>
+        <label class="row select" data-help="helpGroups">
+          <span data-i18n="fGroups"></span>
+          <select name="groupPolicy">
+            <option value="ignore" data-i18n="groupIgnore"></option>
+            <option value="same" data-i18n="groupSame"></option>
+          </select>
+        </label>
+        <label class="row select" data-help="helpIncognito">
+          <span data-i18n="fIncognito"></span>
+          <select name="incognitoPolicy">
+            <option value="separate" data-i18n="incognitoSeparate"></option>
+            <option value="shared" data-i18n="incognitoShared"></option>
+          </select>
+        </label>
+        <label class="row select" data-help="helpWindowTypes">
+          <span data-i18n="fWindowTypes"></span>
+          <select name="windowTypes">
+            <option value="all" data-i18n="windowTypesAll"></option>
+            <option value="normal" data-i18n="windowTypesNormal"></option>
+          </select>
+        </label>
+        <label class="row" data-help="helpRestoreMinimized"
+          ><input type="checkbox" name="restoreMinimized" /> <span data-i18n="fRestoreMinimized"></span
+        ></label>
+        <label class="row" data-help="helpActOnReload"
+          ><input type="checkbox" name="actOnReload" /> <span data-i18n="fActOnReload"></span
+        ></label>
+        <label class="row" data-help="helpShowBadge"
+          ><input type="checkbox" name="showBadge" /> <span data-i18n="fShowBadge"></span
+        ></label>
+        <label class="row" data-help="helpCountFocusOnly"
+          ><input type="checkbox" name="countFocusOnly" /> <span data-i18n="fCountFocusOnly"></span
+        ></label>
+      </section>
+
+      <section>
+        <h2 data-i18n="secRanking"></h2>
+        <p class="muted" data-i18n="rankingHelp"></p>
+        <ol id="ranking" class="ranking"></ol>
+        <label class="row select" data-help="helpTieBreak">
+          <span data-i18n="fTieBreak"></span>
+          <select name="tieBreak">
+            <option value="oldest" data-i18n="tieOldest"></option>
+            <option value="newest" data-i18n="tieNewest"></option>
+          </select>
+        </label>
+      </section>
+
+      <section>
+        <h2 data-i18n="secNormalization"></h2>
+        <p class="muted" data-i18n="normHelp"></p>
+        <label class="row" data-help="helpNormFragment"
+          ><input type="checkbox" name="normalization.ignoreFragment" /> <span data-i18n="normFragment"></span
+        ></label>
+        <label class="row" data-help="helpNormWww"
+          ><input type="checkbox" name="normalization.ignoreWww" /> <span data-i18n="normWww"></span
+        ></label>
+        <label class="row" data-help="helpNormScheme"
+          ><input type="checkbox" name="normalization.ignoreScheme" /> <span data-i18n="normScheme"></span
+        ></label>
+        <label class="row" data-help="helpNormTrailingSlash"
+          ><input type="checkbox" name="normalization.ignoreTrailingSlash" /> <span data-i18n="normTrailingSlash"></span
+        ></label>
+        <label class="row" data-help="helpNormPort"
+          ><input type="checkbox" name="normalization.ignorePort" /> <span data-i18n="normPort"></span
+        ></label>
+        <label class="row" data-help="helpNormHostCase"
+          ><input type="checkbox" name="normalization.caseInsensitiveHost" /> <span data-i18n="normHostCase"></span
+        ></label>
+        <label class="row" data-help="helpNormPathCase"
+          ><input type="checkbox" name="normalization.caseInsensitivePath" /> <span data-i18n="normPathCase"></span
+        ></label>
+      </section>
+
+      <section>
+        <h2 data-i18n="secQuery"></h2>
+        <p class="muted" data-i18n="qHelp"></p>
+        <label class="row" data-help="helpQCompare"
+          ><input type="checkbox" name="query.compare" /> <span data-i18n="qCompare"></span
+        ></label>
+        <label class="row" data-help="helpQOrderMatters"
+          ><input type="checkbox" name="query.orderMatters" /> <span data-i18n="qOrderMatters"></span
+        ></label>
+        <div class="grid2">
+          <label data-help="helpQIgnored">
+            <span data-i18n="qIgnored"></span>
+            <textarea name="query.ignored" rows="6" data-i18n-placeholder="qIgnoredPlaceholder"></textarea>
+          </label>
+          <label data-help="helpQSignificant">
+            <span data-i18n="qSignificant"></span>
+            <textarea name="query.significant" rows="6" data-i18n-placeholder="qSignificantPlaceholder"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 data-i18n="secWhitelist"></h2>
+        <p class="muted" data-i18n="whitelistHelp"></p>
+        <table class="rules" data-list="whitelist">
+          <thead>
+            <tr>
+              <th data-i18n="colEnabled"></th>
+              <th data-help="helpRulePattern"><span data-i18n="colPattern"></span></th>
+              <th data-help="helpRuleType"><span data-i18n="colType"></span></th>
+              <th class="q" data-help="helpRuleQueryCompare"><span data-i18n="colQueryCompare"></span></th>
+              <th class="q" data-help="helpRuleQueryIgnored"><span data-i18n="colQueryIgnored"></span></th>
+              <th class="q" data-help="helpRuleQuerySignificant"><span data-i18n="colQuerySignificant"></span></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button type="button" class="add" data-list="whitelist" data-i18n="btnAddRule"></button>
+      </section>
+
+      <section>
+        <h2 data-i18n="secBlacklist"></h2>
+        <p class="muted" data-i18n="blacklistHelp"></p>
+        <table class="rules no-query" data-list="blacklist">
+          <thead>
+            <tr>
+              <th data-i18n="colEnabled"></th>
+              <th data-help="helpRulePattern"><span data-i18n="colPattern"></span></th>
+              <th data-help="helpRuleType"><span data-i18n="colType"></span></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button type="button" class="add" data-list="blacklist" data-i18n="btnAddRule"></button>
+      </section>
+
+      <section>
+        <h2 data-i18n="secTest"></h2>
+        <p class="muted" data-i18n="testHelp"></p>
+        <input type="url" id="testUrl" data-i18n-placeholder="testPlaceholder" />
+        <dl id="testResult" hidden>
+          <dt data-i18n="testDecision"></dt>
+          <dd id="testDecision"></dd>
+          <dt data-i18n="testRule"></dt>
+          <dd id="testRule"></dd>
+          <dt data-i18n="testKey"></dt>
+          <dd id="testKey"><code></code></dd>
+        </dl>
+      </section>
+
+      <section>
+        <h2 data-i18n="secImportExport"></h2>
+        <p class="muted" data-i18n="importExportHelp"></p>
+        <div class="actions">
+          <button type="button" id="export" data-i18n="btnExport"></button>
+          <button type="button" id="import" data-i18n="btnImport"></button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+          <button type="button" id="reset" data-i18n="btnReset"></button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="savebar">
+      <ul id="errors" class="errors" hidden></ul>
+      <div class="actions">
+        <button type="button" id="save" class="primary" data-i18n="btnSave"></button>
+        <span id="status" class="muted" aria-live="polite"></span>
+      </div>
+    </footer>
+
+    <template id="ruleRow">
+      <tr>
+        <td><input type="checkbox" class="r-enabled" data-i18n-title="colEnabled" /></td>
+        <td><input type="text" class="r-pattern" data-i18n-placeholder="patternPlaceholder" spellcheck="false" /></td>
+        <td>
+          <select class="r-type">
+            <option value="glob" data-i18n="typeGlob"></option>
+            <option value="regex" data-i18n="typeRegex"></option>
+          </select>
+        </td>
+        <td class="q">
+          <select class="r-compare">
+            <option value="" data-i18n="qInherit"></option>
+            <option value="yes" data-i18n="qYes"></option>
+            <option value="no" data-i18n="qNo"></option>
+          </select>
+        </td>
+        <td class="q"><input type="text" class="r-ignored" data-i18n-placeholder="qInherit" spellcheck="false" /></td>
+        <td class="q">
+          <input type="text" class="r-significant" data-i18n-placeholder="qInherit" spellcheck="false" />
+        </td>
+        <td><button type="button" class="r-delete icon" data-i18n-title="btnDelete">✕</button></td>
+      </tr>
+    </template>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

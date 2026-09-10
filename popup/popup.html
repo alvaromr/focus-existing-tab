@@ -1,0 +1,33 @@
+<!doctype html>
+<html data-i18n-title="extName">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="../icons/icon32.png" alt="" width="20" height="20" />
+      <h1 data-i18n="extName"></h1>
+      <label class="switch" data-i18n-title="popupEnabledLabel">
+        <input type="checkbox" id="enabled" />
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <section class="stat">
+      <span data-i18n="popupAvoidedLabel"></span>
+      <strong id="avoided">0</strong>
+      <button id="reset" class="link" data-i18n="popupReset"></button>
+    </section>
+
+    <button id="dedupe" class="primary" data-i18n="popupDedupeNow"></button>
+    <p id="shortcut" class="hint"></p>
+    <p id="message" class="hint" hidden></p>
+
+    <footer>
+      <button id="options" class="link" data-i18n="popupOptions"></button>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

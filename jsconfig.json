@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "strict": false,
+    "types": ["chrome"],
+    "lib": ["esnext", "dom", "dom.iterable"]
+  },
+  "include": ["src", "options", "popup"]
+}

@@ -1,0 +1,254 @@
+{
+  "extName": { "message": "Focus Existing Tab" },
+  "extDescription": {
+    "message": "Si abres una URL que ya está en otra pestaña, enfoca esa pestaña en vez de cargarla de nuevo."
+  },
+  "cmdDedupeAll": { "message": "Desduplicar todas las pestañas ahora" },
+  "cmdToggle": { "message": "Activar o desactivar la extensión" },
+
+  "popupEnabledLabel": { "message": "Activada" },
+  "popupAvoidedLabel": { "message": "Duplicados evitados" },
+  "popupReset": { "message": "reiniciar" },
+  "popupDedupeNow": { "message": "Desduplicar todas las pestañas" },
+  "popupDedupeResult": {
+    "message": "$COUNT$ pestañas cerradas.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "popupShortcut": {
+    "message": "Atajo: $KEY$ (configurable en chrome://extensions/shortcuts)",
+    "placeholders": { "key": { "content": "$1" } }
+  },
+  "popupNoShortcut": { "message": "Sin atajo asignado (chrome://extensions/shortcuts)" },
+  "popupOptions": { "message": "Opciones…" },
+
+  "optTitle": { "message": "Focus Existing Tab · Opciones" },
+  "optIntro": {
+    "message": "Al abrir una URL que ya está en otra pestaña, se enfoca la existente y se cierra la nueva. Los cambios se aplican al pulsar Guardar."
+  },
+
+  "secGeneral": { "message": "General" },
+  "fEnabled": { "message": "Extensión activada" },
+  "fMode": { "message": "Modo de las listas" },
+  "modeBlacklist": { "message": "Actuar en todas las URLs salvo las de la lista negra" },
+  "modeWhitelist": { "message": "Actuar solo en las URLs de la lista blanca" },
+  "fCloseDuplicate": { "message": "Cerrar la pestaña duplicada (si se desactiva, solo se enfoca la existente)" },
+  "fFocusWindow": { "message": "Traer al frente la ventana de la pestaña existente" },
+  "fInTab": { "message": "Si la URL duplicada se abre en una pestaña que ya tenía página" },
+  "inTabBack": { "message": "Enfocar la existente y volver atrás en la pestaña" },
+  "inTabFocus": { "message": "Solo enfocar la existente" },
+  "inTabClose": { "message": "Enfocar la existente y cerrar la pestaña" },
+  "inTabIgnore": { "message": "No hacer nada" },
+  "fScope": { "message": "Buscar pestañas duplicadas en" },
+  "scopeAll": { "message": "Todas las ventanas" },
+  "scopeWindow": { "message": "Solo la misma ventana" },
+  "fPinned": { "message": "Pestañas fijadas" },
+  "pinnedProtect": { "message": "Nunca cerrarlas, pero sí enfocarlas" },
+  "pinnedIgnore": { "message": "Ignorarlas por completo" },
+  "pinnedNormal": { "message": "Tratarlas como las demás" },
+  "fGroups": { "message": "Grupos de pestañas" },
+  "groupIgnore": { "message": "Ignorar los grupos (cualquier pestaña cuenta)" },
+  "groupSame": { "message": "Solo pestañas del mismo grupo (sin grupo cuenta como grupo)" },
+  "fIncognito": { "message": "Pestañas de incógnito" },
+  "incognitoSeparate": { "message": "Nunca mezclar normales e incógnito" },
+  "incognitoShared": { "message": "Comparar entre normales e incógnito (requiere permiso en incógnito)" },
+  "fWindowTypes": { "message": "Ventanas de aplicaciones y popups (PWA)" },
+  "windowTypesAll": { "message": "Sus pestañas también cuentan" },
+  "windowTypesNormal": { "message": "Solo ventanas normales del navegador" },
+  "fRestoreMinimized": { "message": "Restaurar la ventana si está minimizada al enfocar" },
+  "fActOnReload": { "message": "Actuar también al recargar una página que ya está en otra pestaña" },
+  "fShowBadge": { "message": "Mostrar el contador de duplicados evitados en el icono" },
+  "fCountFocusOnly": { "message": "Contar también cuando solo se enfoca (sin cerrar ni volver atrás)" },
+
+  "secRanking": { "message": "Prioridad al elegir la pestaña" },
+  "rankingHelp": {
+    "message": "Si varias pestañas muestran la misma página, se enfoca (o conserva) la que cumpla el primer criterio; a igualdad, el siguiente. Desmarca los que no quieras usar."
+  },
+  "rankGroup": { "message": "Está en el mismo grupo que la pestaña de origen" },
+  "rankWindow": { "message": "Está en la misma ventana" },
+  "rankActive": { "message": "Es la pestaña activa de su ventana" },
+  "rankPinned": { "message": "Está fijada" },
+  "rankLoaded": { "message": "Está cargada (no descargada de memoria)" },
+  "rankUp": { "message": "Subir" },
+  "rankDown": { "message": "Bajar" },
+  "fTieBreak": { "message": "Si sigue el empate" },
+  "tieOldest": { "message": "La pestaña más antigua" },
+  "tieNewest": { "message": "La pestaña más reciente" },
+
+  "secNormalization": { "message": "Normalización de URL" },
+  "normHelp": { "message": "Dos URLs se consideran la misma página si coinciden tras aplicar estas reglas." },
+  "normFragment": { "message": "Ignorar el fragmento (#…)" },
+  "normWww": { "message": "Ignorar el prefijo www." },
+  "normScheme": { "message": "Ignorar http/https" },
+  "normTrailingSlash": { "message": "Ignorar la barra final" },
+  "normPort": { "message": "Ignorar el puerto" },
+  "normHostCase": { "message": "Host sin distinguir mayúsculas" },
+  "normPathCase": { "message": "Ruta sin distinguir mayúsculas" },
+
+  "secQuery": { "message": "Parámetros de la URL (query)" },
+  "qHelp": {
+    "message": "Los parámetros «importantes» se comparan siempre; los «ignorados» nunca; el resto según la casilla. Se admiten patrones glob (utm_*). Un patrón por línea o separados por comas."
+  },
+  "qCompare": { "message": "Comparar los parámetros por defecto" },
+  "qOrderMatters": { "message": "El orden de los parámetros importa (?a=1&b=2 ≠ ?b=2&a=1)" },
+  "qIgnored": { "message": "Parámetros ignorados" },
+  "qIgnoredPlaceholder": { "message": "utm_*\nfbclid\ngclid" },
+  "qSignificant": { "message": "Parámetros que siempre importan" },
+  "qSignificantPlaceholder": { "message": "id\npage" },
+
+  "secWhitelist": { "message": "Lista blanca" },
+  "whitelistHelp": {
+    "message": "En modo «solo lista blanca» limita dónde actúa la extensión. En modo «lista negra» no restringe nada, pero sus ajustes de parámetros se aplican a las URLs que coincidan (útil para personalizar un sitio)."
+  },
+  "secBlacklist": { "message": "Lista negra" },
+  "blacklistHelp": { "message": "En modo «lista negra», la extensión nunca actúa sobre las URLs que coincidan." },
+  "colEnabled": { "message": "Activa" },
+  "colPattern": { "message": "Patrón" },
+  "colType": { "message": "Tipo" },
+  "colQueryCompare": { "message": "Parámetros" },
+  "colQueryIgnored": { "message": "Ignorados" },
+  "colQuerySignificant": { "message": "Importantes" },
+  "typeGlob": { "message": "Glob" },
+  "typeRegex": { "message": "Regex" },
+  "qInherit": { "message": "Heredar" },
+  "qYes": { "message": "Comparar" },
+  "qNo": { "message": "Ignorar" },
+  "patternPlaceholder": { "message": "ejemplo.com" },
+  "btnAddRule": { "message": "+ Añadir regla" },
+  "btnDelete": { "message": "Eliminar" },
+
+  "secTest": { "message": "Probar una URL" },
+  "testHelp": {
+    "message": "Comprueba qué haría la extensión con una URL usando los ajustes del formulario (aunque no estén guardados)."
+  },
+  "testPlaceholder": { "message": "https://www.ejemplo.com/pagina?utm_source=x" },
+  "testDecision": { "message": "Decisión" },
+  "testRule": { "message": "Regla aplicada" },
+  "testNoRule": { "message": "ninguna" },
+  "testKey": { "message": "Clave de comparación" },
+  "reasonDisabled": { "message": "No actúa: extensión desactivada" },
+  "reasonInternal": { "message": "No actúa: URL interna o no http(s)" },
+  "reasonBlacklisted": { "message": "No actúa: coincide con la lista negra" },
+  "reasonNotWhitelisted": { "message": "No actúa: no coincide con la lista blanca" },
+  "reasonOk": { "message": "Actúa: enfocará la pestaña existente" },
+
+  "secImportExport": { "message": "Copia de seguridad" },
+  "importExportHelp": {
+    "message": "Exporta la configuración a JSON o importa una previa. Importar y restaurar solo rellenan el formulario: pulsa Guardar para aplicarlo."
+  },
+  "btnExport": { "message": "Exportar JSON" },
+  "btnImport": { "message": "Importar JSON…" },
+  "btnReset": { "message": "Restaurar valores por defecto" },
+  "importLoaded": { "message": "Configuración importada. Pulsa Guardar para aplicarla." },
+  "importDropped": {
+    "message": "Se descartaron $COUNT$ reglas inválidas.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "importTooLarge": { "message": "el fichero supera 1 MB" },
+  "importError": {
+    "message": "No se pudo importar: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+
+  "helpLabel": { "message": "Ayuda" },
+  "helpEnabled": {
+    "message": "Interruptor general. Desactivada, la extensión no hace nada y el icono muestra OFF. También se cambia desde el popup o con Alt+Mayús+F."
+  },
+  "helpMode": {
+    "message": "«Salvo lista negra»: actúa en cualquier web excepto las que coincidan con la lista negra. «Solo lista blanca»: actúa únicamente en las webs de la lista blanca."
+  },
+  "helpCloseDuplicate": {
+    "message": "Al abrir una URL ya abierta en una pestaña nueva, cierra esa pestaña nueva tras enfocar la existente. Desmarcado, solo enfoca y deja la nueva cargando."
+  },
+  "helpFocusWindow": {
+    "message": "Si la pestaña existente está en otra ventana, trae esa ventana al frente. Desmarcado, solo activa la pestaña dentro de su ventana."
+  },
+  "helpInTab": {
+    "message": "Qué hacer cuando la URL duplicada se escribe o se sigue desde una pestaña que ya mostraba otra página. «Volver atrás» enfoca la existente y devuelve esta pestaña a su página anterior (la duplicada llega a cargarse un instante)."
+  },
+  "helpScope": {
+    "message": "Dónde buscar la pestaña ya abierta: en todas las ventanas del navegador o solo en la ventana donde se abre la URL."
+  },
+  "helpPinned": {
+    "message": "Las pestañas fijadas pueden protegerse (se enfocan pero nunca se cierran), ignorarse (ni se enfocan ni se cierran) o tratarse como cualquier otra."
+  },
+  "helpGroups": {
+    "message": "«Ignorar»: una pestaña dentro de un grupo y otra fuera son duplicadas. «Solo mismo grupo»: solo se comparan pestañas del mismo grupo; las que no tienen grupo forman un grupo más. Para preferir el mismo grupo sin excluir el resto, usa el criterio «mismo grupo» en la prioridad."
+  },
+  "helpIncognito": {
+    "message": "Las pestañas de incógnito solo son visibles si permites la extensión en incógnito (chrome://extensions). «Nunca mezclar»: una pestaña normal solo casa con normales y una de incógnito con incógnito."
+  },
+  "helpWindowTypes": {
+    "message": "Las aplicaciones web instaladas (PWA) y las ventanas emergentes también tienen pestañas. Elige si cuentan como candidatas o si solo se miran las ventanas normales."
+  },
+  "helpRestoreMinimized": {
+    "message": "Si la pestaña existente está en una ventana minimizada, restaurarla al enfocar. Desmarcado, la pestaña se activa pero la ventana sigue minimizada."
+  },
+  "helpActOnReload": {
+    "message": "Por defecto recargar una página (o escribir su misma URL) no cuenta como duplicado aunque otra pestaña la muestre. Marcado, se aplica la misma acción que a una navegación dentro de la pestaña."
+  },
+  "helpShowBadge": {
+    "message": "Muestra el número de duplicados evitados sobre el icono de la extensión. El contador se reinicia desde el popup."
+  },
+  "helpCountFocusOnly": {
+    "message": "Marcado, también suma cuando la extensión solo enfoca la pestaña existente sin cerrar ni volver atrás. Desmarcado, solo cuenta cierres y retrocesos."
+  },
+  "helpTieBreak": {
+    "message": "Cuando varias pestañas empatan en todos los criterios marcados, se enfoca (o conserva) la más antigua o la más reciente."
+  },
+  "helpNormFragment": {
+    "message": "Ignora lo que va después de # (ancla dentro de la página). ejemplo.com/doc#cap2 y ejemplo.com/doc son la misma página."
+  },
+  "helpNormWww": { "message": "www.ejemplo.com y ejemplo.com son la misma página." },
+  "helpNormScheme": { "message": "http://ejemplo.com y https://ejemplo.com son la misma página." },
+  "helpNormTrailingSlash": { "message": "ejemplo.com/ruta/ y ejemplo.com/ruta son la misma página." },
+  "helpNormPort": {
+    "message": "ejemplo.com:8080 y ejemplo.com son la misma página. Los puertos por defecto (80, 443) se ignoran siempre."
+  },
+  "helpNormHostCase": {
+    "message": "EJEMPLO.com y ejemplo.com son la misma página. El navegador ya normaliza el host a minúsculas, así que en la práctica siempre se cumple."
+  },
+  "helpNormPathCase": {
+    "message": "ejemplo.com/Doc y ejemplo.com/doc son la misma página. Muchos servidores distinguen mayúsculas en la ruta; actívalo solo si sabes que el tuyo no."
+  },
+  "helpQCompare": {
+    "message": "Marcado, los parámetros (?a=1&b=2) forman parte de la comparación salvo los ignorados. Desmarcado, se ignoran todos salvo los importantes. Cada regla de la lista blanca puede cambiarlo para su web."
+  },
+  "helpQOrderMatters": { "message": "Desmarcado, ?a=1&b=2 y ?b=2&a=1 son la misma página. Marcado, el orden cuenta." },
+  "helpQIgnored": {
+    "message": "Parámetros que nunca se comparan, uno por línea o separados por comas. Admite comodines: utm_* cubre utm_source, utm_medium… Típicos: identificadores de campañas y seguimiento."
+  },
+  "helpQSignificant": {
+    "message": "Parámetros que siempre se comparan, aunque «Comparar los parámetros» esté desmarcado o coincidan con un ignorado. Útil para el identificador que define la página (v en YouTube, id en un foro)."
+  },
+  "helpRulePattern": {
+    "message": "Glob sin «/»: dominio y subdominios (ejemplo.com, *.google.com, localhost:8080). Glob con «/»: URL completa sin esquema, anclada; usa * para prefijos (github.com/org/*). Regex: sobre la URL completa; admite /cuerpo/flags."
+  },
+  "helpRuleType": {
+    "message": "Glob: * casa cualquier texto y ? un carácter; el resto es literal. Regex: expresión regular de JavaScript sobre la URL completa (https://…)."
+  },
+  "helpRuleQueryCompare": {
+    "message": "Para las URLs que coincidan con esta regla: heredar el ajuste global de «Comparar los parámetros», o forzar comparar/ignorar."
+  },
+  "helpRuleQueryIgnored": {
+    "message": "Parámetros ignorados solo para esta regla, separados por comas. Vacío = heredar la lista global."
+  },
+  "helpRuleQuerySignificant": {
+    "message": "Parámetros que siempre importan solo para esta regla, separados por comas. Vacío = heredar la lista global."
+  },
+
+  "btnSave": { "message": "Guardar" },
+  "statusUnsaved": { "message": "Cambios sin guardar" },
+  "statusSaved": { "message": "Guardado" },
+  "statusFixErrors": { "message": "Corrige los errores antes de guardar" },
+  "statusResetPending": { "message": "Valores por defecto cargados. Pulsa Guardar para aplicarlos." },
+  "statusSaveError": {
+    "message": "Error al guardar: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "errRegex": {
+    "message": "expresión regular inválida «$PATTERN$»",
+    "placeholders": { "pattern": { "content": "$1" } }
+  },
+  "errEmptyPattern": { "message": "el patrón está vacío" },
+  "errInvalidRule": { "message": "regla inválida" }
+}

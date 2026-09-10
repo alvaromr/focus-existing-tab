@@ -1,0 +1,254 @@
+{
+  "extName": { "message": "Focus Existing Tab" },
+  "extDescription": {
+    "message": "When you open a URL that is already open in another tab, focus that tab instead of loading it again."
+  },
+  "cmdDedupeAll": { "message": "Deduplicate all tabs now" },
+  "cmdToggle": { "message": "Enable or disable the extension" },
+
+  "popupEnabledLabel": { "message": "Enabled" },
+  "popupAvoidedLabel": { "message": "Duplicates avoided" },
+  "popupReset": { "message": "reset" },
+  "popupDedupeNow": { "message": "Deduplicate all tabs" },
+  "popupDedupeResult": {
+    "message": "$COUNT$ tabs closed.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "popupShortcut": {
+    "message": "Shortcut: $KEY$ (change it at chrome://extensions/shortcuts)",
+    "placeholders": { "key": { "content": "$1" } }
+  },
+  "popupNoShortcut": { "message": "No shortcut assigned (chrome://extensions/shortcuts)" },
+  "popupOptions": { "message": "Options…" },
+
+  "optTitle": { "message": "Focus Existing Tab · Options" },
+  "optIntro": {
+    "message": "When you open a URL that is already open in another tab, the existing tab is focused and the new one closed. Changes apply when you press Save."
+  },
+
+  "secGeneral": { "message": "General" },
+  "fEnabled": { "message": "Extension enabled" },
+  "fMode": { "message": "List mode" },
+  "modeBlacklist": { "message": "Act on every URL except those in the blacklist" },
+  "modeWhitelist": { "message": "Act only on URLs in the whitelist" },
+  "fCloseDuplicate": { "message": "Close the duplicate tab (if off, only focus the existing one)" },
+  "fFocusWindow": { "message": "Bring the window of the existing tab to the front" },
+  "fInTab": { "message": "If the duplicate URL opens in a tab that already had a page" },
+  "inTabBack": { "message": "Focus the existing tab and go back in that tab" },
+  "inTabFocus": { "message": "Only focus the existing tab" },
+  "inTabClose": { "message": "Focus the existing tab and close that tab" },
+  "inTabIgnore": { "message": "Do nothing" },
+  "fScope": { "message": "Look for duplicate tabs in" },
+  "scopeAll": { "message": "All windows" },
+  "scopeWindow": { "message": "Only the same window" },
+  "fPinned": { "message": "Pinned tabs" },
+  "pinnedProtect": { "message": "Never close them, but focus them" },
+  "pinnedIgnore": { "message": "Ignore them completely" },
+  "pinnedNormal": { "message": "Treat them like any other tab" },
+  "fGroups": { "message": "Tab groups" },
+  "groupIgnore": { "message": "Ignore groups (any tab counts)" },
+  "groupSame": { "message": "Only tabs in the same group (ungrouped counts as a group)" },
+  "fIncognito": { "message": "Incognito tabs" },
+  "incognitoSeparate": { "message": "Never mix normal and incognito" },
+  "incognitoShared": { "message": "Compare across normal and incognito (needs incognito permission)" },
+  "fWindowTypes": { "message": "App and popup windows (PWAs)" },
+  "windowTypesAll": { "message": "Their tabs count too" },
+  "windowTypesNormal": { "message": "Only regular browser windows" },
+  "fRestoreMinimized": { "message": "Restore the window if minimized when focusing" },
+  "fActOnReload": { "message": "Also act when reloading a page that is already in another tab" },
+  "fShowBadge": { "message": "Show the avoided-duplicates counter on the icon" },
+  "fCountFocusOnly": { "message": "Also count when only focusing (no close or back)" },
+
+  "secRanking": { "message": "Priority when choosing the tab" },
+  "rankingHelp": {
+    "message": "When several tabs show the same page, the one meeting the first criterion is focused (or kept); on a tie, the next one. Untick the ones you do not want."
+  },
+  "rankGroup": { "message": "Is in the same group as the originating tab" },
+  "rankWindow": { "message": "Is in the same window" },
+  "rankActive": { "message": "Is the active tab of its window" },
+  "rankPinned": { "message": "Is pinned" },
+  "rankLoaded": { "message": "Is loaded (not discarded from memory)" },
+  "rankUp": { "message": "Move up" },
+  "rankDown": { "message": "Move down" },
+  "fTieBreak": { "message": "If still tied" },
+  "tieOldest": { "message": "The oldest tab" },
+  "tieNewest": { "message": "The newest tab" },
+
+  "secNormalization": { "message": "URL normalization" },
+  "normHelp": { "message": "Two URLs are the same page when they match after applying these rules." },
+  "normFragment": { "message": "Ignore the fragment (#…)" },
+  "normWww": { "message": "Ignore the www. prefix" },
+  "normScheme": { "message": "Ignore http/https" },
+  "normTrailingSlash": { "message": "Ignore the trailing slash" },
+  "normPort": { "message": "Ignore the port" },
+  "normHostCase": { "message": "Case-insensitive host" },
+  "normPathCase": { "message": "Case-insensitive path" },
+
+  "secQuery": { "message": "URL parameters (query)" },
+  "qHelp": {
+    "message": "\"Significant\" parameters are always compared; \"ignored\" ones never; the rest according to the checkbox. Glob patterns are allowed (utm_*). One pattern per line or comma separated."
+  },
+  "qCompare": { "message": "Compare parameters by default" },
+  "qOrderMatters": { "message": "Parameter order matters (?a=1&b=2 ≠ ?b=2&a=1)" },
+  "qIgnored": { "message": "Ignored parameters" },
+  "qIgnoredPlaceholder": { "message": "utm_*\nfbclid\ngclid" },
+  "qSignificant": { "message": "Parameters that always matter" },
+  "qSignificantPlaceholder": { "message": "id\npage" },
+
+  "secWhitelist": { "message": "Whitelist" },
+  "whitelistHelp": {
+    "message": "In \"whitelist only\" mode it limits where the extension acts. In \"blacklist\" mode it restricts nothing, but its parameter settings apply to matching URLs (handy to customize one site)."
+  },
+  "secBlacklist": { "message": "Blacklist" },
+  "blacklistHelp": { "message": "In \"blacklist\" mode the extension never acts on matching URLs." },
+  "colEnabled": { "message": "On" },
+  "colPattern": { "message": "Pattern" },
+  "colType": { "message": "Type" },
+  "colQueryCompare": { "message": "Parameters" },
+  "colQueryIgnored": { "message": "Ignored" },
+  "colQuerySignificant": { "message": "Significant" },
+  "typeGlob": { "message": "Glob" },
+  "typeRegex": { "message": "Regex" },
+  "qInherit": { "message": "Inherit" },
+  "qYes": { "message": "Compare" },
+  "qNo": { "message": "Ignore" },
+  "patternPlaceholder": { "message": "example.com" },
+  "btnAddRule": { "message": "+ Add rule" },
+  "btnDelete": { "message": "Delete" },
+
+  "secTest": { "message": "Test a URL" },
+  "testHelp": {
+    "message": "Check what the extension would do with a URL using the settings in the form (even unsaved ones)."
+  },
+  "testPlaceholder": { "message": "https://www.example.com/page?utm_source=x" },
+  "testDecision": { "message": "Decision" },
+  "testRule": { "message": "Matched rule" },
+  "testNoRule": { "message": "none" },
+  "testKey": { "message": "Comparison key" },
+  "reasonDisabled": { "message": "No action: extension disabled" },
+  "reasonInternal": { "message": "No action: internal or non-http(s) URL" },
+  "reasonBlacklisted": { "message": "No action: matches the blacklist" },
+  "reasonNotWhitelisted": { "message": "No action: does not match the whitelist" },
+  "reasonOk": { "message": "Acts: will focus the existing tab" },
+
+  "secImportExport": { "message": "Backup" },
+  "importExportHelp": {
+    "message": "Export the configuration as JSON or import a previous one. Import and reset only fill the form: press Save to apply."
+  },
+  "btnExport": { "message": "Export JSON" },
+  "btnImport": { "message": "Import JSON…" },
+  "btnReset": { "message": "Restore defaults" },
+  "importLoaded": { "message": "Configuration imported. Press Save to apply it." },
+  "importDropped": {
+    "message": "$COUNT$ invalid rules were dropped.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "importTooLarge": { "message": "the file exceeds 1 MB" },
+  "importError": {
+    "message": "Could not import: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+
+  "helpLabel": { "message": "Help" },
+  "helpEnabled": {
+    "message": "Master switch. When off the extension does nothing and the icon shows OFF. Also toggled from the popup or with Alt+Shift+F."
+  },
+  "helpMode": {
+    "message": "\"Except blacklist\": acts on any site except those matching the blacklist. \"Whitelist only\": acts only on sites in the whitelist."
+  },
+  "helpCloseDuplicate": {
+    "message": "When an already open URL is opened in a new tab, close that new tab after focusing the existing one. Unticked, it only focuses and leaves the new tab loading."
+  },
+  "helpFocusWindow": {
+    "message": "If the existing tab lives in another window, bring that window to the front. Unticked, only the tab is activated inside its window."
+  },
+  "helpInTab": {
+    "message": "What to do when the duplicate URL is typed or followed from a tab that already showed another page. \"Go back\" focuses the existing tab and returns this tab to its previous page (the duplicate loads for an instant)."
+  },
+  "helpScope": {
+    "message": "Where to look for the already open tab: every browser window, or only the window where the URL is opened."
+  },
+  "helpPinned": {
+    "message": "Pinned tabs can be protected (focused but never closed), ignored (neither focused nor closed) or treated like any other tab."
+  },
+  "helpGroups": {
+    "message": "\"Ignore\": a tab inside a group and one outside are duplicates. \"Same group only\": only tabs in the same group are compared; ungrouped tabs form a group of their own. To prefer the same group without excluding the rest, use the \"same group\" criterion in the priority list."
+  },
+  "helpIncognito": {
+    "message": "Incognito tabs are only visible if you allow the extension in incognito (chrome://extensions). \"Never mix\": a normal tab only matches normal tabs and an incognito tab only incognito ones."
+  },
+  "helpWindowTypes": {
+    "message": "Installed web apps (PWAs) and popup windows also have tabs. Choose whether they count as candidates or only regular windows are searched."
+  },
+  "helpRestoreMinimized": {
+    "message": "If the existing tab is in a minimized window, restore it when focusing. Unticked, the tab is activated but the window stays minimized."
+  },
+  "helpActOnReload": {
+    "message": "By default reloading a page (or typing its own URL) is not a duplicate even if another tab shows it. Ticked, the same action as an in-tab navigation applies."
+  },
+  "helpShowBadge": {
+    "message": "Shows the number of avoided duplicates on the extension icon. Reset it from the popup."
+  },
+  "helpCountFocusOnly": {
+    "message": "Ticked, also counts when the extension only focuses the existing tab without closing or going back. Unticked, only closes and go-backs count."
+  },
+  "helpTieBreak": {
+    "message": "When several tabs tie on every ticked criterion, the oldest or the newest one is focused (or kept)."
+  },
+  "helpNormFragment": {
+    "message": "Ignore what follows # (in-page anchor). example.com/doc#ch2 and example.com/doc are the same page."
+  },
+  "helpNormWww": { "message": "www.example.com and example.com are the same page." },
+  "helpNormScheme": { "message": "http://example.com and https://example.com are the same page." },
+  "helpNormTrailingSlash": { "message": "example.com/path/ and example.com/path are the same page." },
+  "helpNormPort": {
+    "message": "example.com:8080 and example.com are the same page. Default ports (80, 443) are always ignored."
+  },
+  "helpNormHostCase": {
+    "message": "EXAMPLE.com and example.com are the same page. The browser already lowercases the host, so in practice this always holds."
+  },
+  "helpNormPathCase": {
+    "message": "example.com/Doc and example.com/doc are the same page. Many servers are case-sensitive in the path; enable only if you know yours is not."
+  },
+  "helpQCompare": {
+    "message": "Ticked, parameters (?a=1&b=2) take part in the comparison except the ignored ones. Unticked, all are ignored except the significant ones. Each whitelist rule can override this for its site."
+  },
+  "helpQOrderMatters": { "message": "Unticked, ?a=1&b=2 and ?b=2&a=1 are the same page. Ticked, order counts." },
+  "helpQIgnored": {
+    "message": "Parameters never compared, one per line or comma separated. Wildcards allowed: utm_* covers utm_source, utm_medium… Typical: campaign and tracking identifiers."
+  },
+  "helpQSignificant": {
+    "message": "Parameters always compared, even when \"Compare parameters\" is unticked or they match an ignored pattern. Useful for the identifier that defines the page (v on YouTube, id on a forum)."
+  },
+  "helpRulePattern": {
+    "message": "Glob without \"/\": domain and subdomains (example.com, *.google.com, localhost:8080). Glob with \"/\": full URL without scheme, anchored; use * for prefixes (github.com/org/*). Regex: over the full URL; /body/flags allowed."
+  },
+  "helpRuleType": {
+    "message": "Glob: * matches any text and ? one character; everything else is literal. Regex: JavaScript regular expression over the full URL (https://…)."
+  },
+  "helpRuleQueryCompare": {
+    "message": "For URLs matching this rule: inherit the global \"Compare parameters\" setting, or force compare/ignore."
+  },
+  "helpRuleQueryIgnored": {
+    "message": "Ignored parameters for this rule only, comma separated. Empty = inherit the global list."
+  },
+  "helpRuleQuerySignificant": {
+    "message": "Always-significant parameters for this rule only, comma separated. Empty = inherit the global list."
+  },
+
+  "btnSave": { "message": "Save" },
+  "statusUnsaved": { "message": "Unsaved changes" },
+  "statusSaved": { "message": "Saved" },
+  "statusFixErrors": { "message": "Fix the errors before saving" },
+  "statusResetPending": { "message": "Defaults loaded. Press Save to apply them." },
+  "statusSaveError": {
+    "message": "Error while saving: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "errRegex": {
+    "message": "invalid regular expression \"$PATTERN$\"",
+    "placeholders": { "pattern": { "content": "$1" } }
+  },
+  "errEmptyPattern": { "message": "the pattern is empty" },
+  "errInvalidRule": { "message": "invalid rule" }
+}

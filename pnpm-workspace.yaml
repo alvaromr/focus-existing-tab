@@ -1,0 +1,6 @@
+# Supply-chain hardening (pnpm >= 11). Dependency install scripts and exotic transitive
+# dependencies are already blocked by default; these tighten the rest.
+minimumReleaseAge: 10080 # only install versions published >= 7 days ago (strict: fail instead of fallback)
+trustPolicy: no-downgrade # never update to a version with weaker provenance than the installed one
+verifyDepsBeforeRun: error # refuse to run scripts if node_modules does not match the lockfile
+allowBuilds: {} # no dependency may run preinstall/postinstall; add packages here explicitly
