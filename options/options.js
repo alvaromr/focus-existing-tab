@@ -126,6 +126,7 @@ function fillForm(config) {
   for (const name of SCALAR_FIELDS) setField(name, getPath(config, name));
   input(document, `[name="mode"][value="${config.mode}"]`).checked = true;
   fillRanking(config.ranking);
+  setField('excludedGroups', config.excludedGroups.join('\n'));
   setField('query.ignored', config.query.ignored.join('\n'));
   setField('query.significant', config.query.significant.join('\n'));
   for (const list of ['whitelist', 'blacklist']) {
@@ -140,6 +141,7 @@ function readForm() {
   for (const name of SCALAR_FIELDS) setPath(raw, name, getField(name));
   raw.mode = input(document, '[name="mode"]:checked')?.value;
   raw.ranking = readRanking();
+  raw.excludedGroups = parseList(getField('excludedGroups'));
   raw.query.ignored = parseList(getField('query.ignored'));
   raw.query.significant = parseList(getField('query.significant'));
   raw.whitelist = readRules('whitelist');

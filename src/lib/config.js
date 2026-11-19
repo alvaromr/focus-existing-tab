@@ -6,7 +6,8 @@
  * @typedef {{ compare: boolean, orderMatters: boolean, ignored: string[], significant: string[] }} QueryOptions
  * @typedef {{ version: number, enabled: boolean, mode: string, whitelist: Rule[], blacklist: Rule[],
  *   closeDuplicate: boolean, focusWindow: boolean, inTabNavigation: string, scope: string, pinnedPolicy: string,
- *   groupPolicy: string, incognitoPolicy: string, windowTypes: string, ranking: string[], tieBreak: string,
+ *   groupPolicy: string, excludedGroups: string[], incognitoPolicy: string, windowTypes: string,
+ *   ranking: string[], tieBreak: string,
  *   restoreMinimized: boolean, actOnReload: boolean, countFocusOnly: boolean, showBadge: boolean,
  *   normalization: Normalization, query: QueryOptions }} Config
  */
@@ -17,7 +18,7 @@ export const MODES = ['blacklist', 'whitelist'];
 export const IN_TAB_ACTIONS = ['back', 'focus', 'close', 'ignore'];
 export const SCOPES = ['all', 'window'];
 export const PINNED_POLICIES = ['protect', 'ignore', 'normal'];
-export const GROUP_POLICIES = ['ignore', 'same'];
+export const GROUP_POLICIES = ['ignore', 'same', 'exclude'];
 export const INCOGNITO_POLICIES = ['separate', 'shared'];
 export const WINDOW_TYPES = ['all', 'normal'];
 export const RANK_CRITERIA = ['group', 'window', 'active', 'pinned', 'loaded'];
@@ -42,8 +43,12 @@ export const DEFAULT_CONFIG = Object.freeze({
   // 'protect': pinned tabs are never closed. 'ignore': pinned tabs are not considered. 'normal'.
   pinnedPolicy: 'protect',
   // 'ignore': tab groups play no role. 'same': only tabs in the same group (ungrouped counts as
-  // a group of its own).
+  // a group of its own). 'exclude': grouped tabs are left alone, only ungrouped tabs count.
   groupPolicy: 'ignore',
+  // Globs over tab group titles (`*` any run, `?` one character, case-insensitive). Tabs in a
+  // matching group are never duplicates and never block others. Defaults: the groups of Claude in
+  // Chrome (Claude Code's browser automation), which prefixes ⌛, 🔔 or ✅ while it works.
+  excludedGroups: Object.freeze(['Claude', 'Claude (MCP)', '?Claude', '?Claude (MCP)']),
   // 'separate': normal and incognito tabs never match each other. 'shared': they do (only
   // possible when the extension is allowed in incognito).
   incognitoPolicy: 'separate',
@@ -205,6 +210,7 @@ export function normalizeConfig(raw) {
     scope: pickEnum(src.scope, SCOPES, d.scope),
     pinnedPolicy: pickEnum(src.pinnedPolicy, PINNED_POLICIES, d.pinnedPolicy),
     groupPolicy: pickEnum(src.groupPolicy, GROUP_POLICIES, d.groupPolicy),
+    excludedGroups: src.excludedGroups == null ? [...d.excludedGroups] : parseList(src.excludedGroups),
     incognitoPolicy: pickEnum(src.incognitoPolicy, INCOGNITO_POLICIES, d.incognitoPolicy),
     windowTypes: pickEnum(src.windowTypes, WINDOW_TYPES, d.windowTypes),
     ranking: pickRanking(src.ranking, d.ranking),

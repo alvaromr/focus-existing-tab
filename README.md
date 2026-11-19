@@ -66,6 +66,7 @@ The full guide to every option and to the behaviour in each case is in
 | Permission      | Purpose                                                                        |
 | --------------- | ------------------------------------------------------------------------------ |
 | `tabs`          | Read the URLs of open tabs, activate the existing one and close the duplicate. |
+| `tabGroups`     | Read tab group titles to leave the excluded groups alone.                      |
 | `webNavigation` | Learn about every navigation before it loads.                                  |
 | `storage`       | Save the configuration (`sync`) and the counter (`local`).                     |
 

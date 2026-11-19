@@ -46,8 +46,10 @@
   "pinnedIgnore": { "message": "Ignore them completely" },
   "pinnedNormal": { "message": "Treat them like any other tab" },
   "fGroups": { "message": "Tab groups" },
-  "groupIgnore": { "message": "Ignore groups (any tab counts)" },
+  "groupIgnore": { "message": "Groups don't matter (compare with every tab)" },
   "groupSame": { "message": "Only tabs in the same group (ungrouped counts as a group)" },
+  "groupExclude": { "message": "Leave grouped tabs alone" },
+  "fExcludedGroups": { "message": "Excluded groups" },
   "fIncognito": { "message": "Incognito tabs" },
   "incognitoSeparate": { "message": "Never mix normal and incognito" },
   "incognitoShared": { "message": "Compare across normal and incognito (needs incognito permission)" },
@@ -172,7 +174,10 @@
     "message": "Pinned tabs can be protected (focused but never closed), ignored (neither focused nor closed) or treated like any other tab."
   },
   "helpGroups": {
-    "message": "\"Ignore\": a tab inside a group and one outside are duplicates. \"Same group only\": only tabs in the same group are compared; ungrouped tabs form a group of their own. To prefer the same group without excluding the rest, use the \"same group\" criterion in the priority list."
+    "message": "\"Groups don't matter\": a tab inside a group and one outside are duplicates. \"Same group only\": only tabs in the same group are compared; ungrouped tabs form a group of their own. \"Leave grouped tabs alone\": a tab in any group is never a duplicate and never blocks another; only ungrouped tabs are compared. To prefer the same group without excluding the rest, use the \"same group\" criterion in the priority list."
+  },
+  "helpExcludedGroups": {
+    "message": "Tab group titles, one per line or comma-separated. Tabs in these groups are never duplicates and never block opening the same page elsewhere; \"Deduplicate all\" skips them. Case-insensitive; * matches anything and ? one character. The defaults are the groups of Claude in Chrome (Claude Code's browser automation): blocking its navigation makes it lose its group."
   },
   "helpIncognito": {
     "message": "Incognito tabs are only visible if you allow the extension in incognito (chrome://extensions). \"Never mix\": a normal tab only matches normal tabs and an incognito tab only incognito ones."

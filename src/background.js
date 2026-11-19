@@ -1,6 +1,6 @@
 import { resolveDecision } from './lib/matching.js';
 import { isBlankUrl, isEligibleUrl } from './lib/normalize.js';
-import { canCloseTab, findExistingTab, planDedupeAll } from './lib/dedupe.js';
+import { canCloseTab, excludedGroupIds, findExistingTab, planDedupeAll } from './lib/dedupe.js';
 import { createNavigationTracker } from './lib/navigation-tracker.js';
 import {
   addAvoided,
@@ -66,7 +66,8 @@ async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }) {
   const previous = prevUrl ?? tab.url ?? '';
   // Reloading the page the tab already shows is not opening a duplicate (unless configured so).
   if (previous === url && !config.actOnReload) return;
-  const target = findExistingTab(config, await queryTabs(), tab, url, decision.rule);
+  const [tabs, excluded] = await Promise.all([queryTabs(), queryExcludedGroups()]);
+  const target = findExistingTab(config, tabs, tab, url, decision.rule, excluded);
   if (!target) return;
 
   const action = chooseAction(tab, wasNew || isBlankUrl(previous));
@@ -92,6 +93,10 @@ function queryTabs() {
   return chrome.tabs.query(config.windowTypes === 'normal' ? { windowType: 'normal' } : {});
 }
 
+async function queryExcludedGroups() {
+  return excludedGroupIds(config, await chrome.tabGroups.query({}));
+}
+
 function goBack(tabId) {
   nav.goBackIssued(tabId);
   chrome.tabs.goBack(tabId).catch(() => nav.goBackFailed(tabId));
@@ -111,8 +116,12 @@ async function focusTab(tab) {
 
 async function dedupeAll() {
   await ready;
-  const [tabs, current] = await Promise.all([queryTabs(), chrome.windows.getLastFocused().catch(() => null)]);
-  const plan = planDedupeAll(config, tabs, current?.id);
+  const [tabs, current, excluded] = await Promise.all([
+    queryTabs(),
+    chrome.windows.getLastFocused().catch(() => null),
+    queryExcludedGroups(),
+  ]);
+  const plan = planDedupeAll(config, tabs, current?.id, excluded);
   if (plan.close.length) {
     await chrome.tabs.remove(plan.close).catch(() => {});
     await addAvoided(plan.close.length);

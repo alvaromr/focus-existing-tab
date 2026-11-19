@@ -12,7 +12,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["tabs", "webNavigation", "storage"],
+  "permissions": ["tabs", "tabGroups", "webNavigation", "storage"],
   "background": {
     "service_worker": "src/background.js",
     "type": "module"

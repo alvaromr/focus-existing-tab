@@ -70,6 +70,9 @@ English, Spanish
 - Single purpose: avoid duplicate tabs by focusing the one already open.
 - `tabs` justification: read the URLs of open tabs to find the one already open, activate it, close
   the duplicate and go back in the originating tab.
+- `tabGroups` justification: read tab group titles to recognise the groups the user excluded (by
+  default, those of the Claude in Chrome browser automation) and never treat their tabs as
+  duplicates.
 - `webNavigation` justification: learn about every navigation before it loads
   (`onBeforeNavigate`) and about the final URL after redirects.
 - `storage` justification: save the user's configuration and the counter.

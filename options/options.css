@@ -113,7 +113,8 @@ textarea {
   font-size: 13px;
   resize: vertical;
 }
-.row.select select {
+.row.select select,
+.row.select textarea {
   width: 360px;
   flex: 0 0 auto;
 }

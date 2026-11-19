@@ -111,6 +111,10 @@ With the extension loaded in developer mode:
 14. **Groups**: put an example.com tab in a group and open example.com outside the group: the new
     one closes. With "Only tabs in the same group" it stays.
 15. **Help**: click any "?" in options; the text unfolds under the option; click again to hide it.
+16. **Excluded groups**: open example.com in a normal tab, then ask Claude Code to open
+    example.com: its tab stays in its `Claude` group. Open example.com again yourself: the new
+    tab focuses your first tab, never Claude's. Add your own group's title to "Excluded groups",
+    save, and check its tabs are no longer deduplicated.
 
 To debug the service worker: `chrome://extensions` → the extension → "Service worker". Errors are
 logged to its console.

@@ -8,6 +8,15 @@ test('empty input yields the defaults', () => {
   assert.deepEqual(config, JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
 });
 
+test('excludedGroups defaults to the Claude in Chrome groups and is parsed as a list', () => {
+  assert.deepEqual(normalizeConfig({}).config.excludedGroups, ['Claude', 'Claude (MCP)', '?Claude', '?Claude (MCP)']);
+  assert.deepEqual(normalizeConfig({ excludedGroups: 'Work\n Scratch ,Work' }).config.excludedGroups, [
+    'Work',
+    'Scratch',
+  ]);
+  assert.deepEqual(normalizeConfig({ excludedGroups: [] }).config.excludedGroups, []);
+});
+
 test('invalid values fall back, unknown keys are dropped', () => {
   const { config } = normalizeConfig({
     enabled: 'yes',

@@ -5,6 +5,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+### Added
+
+- "Excluded groups" option (`excludedGroups`): tab group titles (globs) whose tabs are never
+  duplicates and never block others. Needs the new `tabGroups` permission to read group titles.
+- "Leave grouped tabs alone" value for "Tab groups" (`groupPolicy: "exclude"`): tabs in any group
+  are never duplicates and never block others; only ungrouped tabs are compared.
+
+### Fixed
+
+- Claude in Chrome no longer loses its tab group when it opens a page that is already open: its
+  groups (`Claude`, `Claude (MCP)`, with or without a status prefix) are excluded by default.
+
 ## [1.0.0] - 2026-09-10
 
 First release.

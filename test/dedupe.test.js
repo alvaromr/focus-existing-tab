@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { findExistingTab, planDedupeAll, canCloseTab, tabUrl, groupOf } from '../src/lib/dedupe.js';
+import { findExistingTab, planDedupeAll, canCloseTab, tabUrl, groupOf, excludedGroupIds } from '../src/lib/dedupe.js';
 import { normalizeConfig } from '../src/lib/config.js';
 
 const cfg = (overrides) => normalizeConfig(overrides).config;
@@ -203,6 +203,20 @@ test('groupPolicy=same: only the same group; ungrouped is a group of its own', (
   assert.equal(plan.keep[0].tab, inGroup7);
 });
 
+test('groupPolicy=exclude: grouped tabs are never duplicates and never block; ungrouped ones still match', () => {
+  const c = cfg({ groupPolicy: 'exclude' });
+  const grouped = tab('https://a.com/', { groupId: 7 });
+  const ungrouped = tab('https://a.com/', { groupId: -1 });
+  const navUngrouped = tab('chrome://newtab/');
+  const navGrouped = tab('chrome://newtab/', { groupId: 7 });
+  assert.equal(findExistingTab(c, [grouped], navUngrouped, 'https://a.com/', null), null);
+  assert.equal(findExistingTab(c, [grouped, ungrouped], navUngrouped, 'https://a.com/', null), ungrouped);
+  assert.equal(findExistingTab(c, [ungrouped, grouped], navGrouped, 'https://a.com/', null), null);
+  const twin = tab('https://a.com/', { groupId: 7 });
+  const plain = tab('https://a.com/');
+  assert.deepEqual(planDedupeAll(c, [grouped, twin, ungrouped, plain], 1).close, [plain.id]);
+});
+
 test('ranking with "group" first: same group outranks same window and active', () => {
   const c = cfg({ ranking: ['group', 'window', 'active', 'pinned', 'loaded'] });
   const activeOtherGroup = tab('https://a.com/', { windowId: 2, active: true, groupId: 9 });
@@ -280,4 +294,56 @@ test('incognitoPolicy=shared matches across normal and incognito tabs', () => {
   );
   assert.deepEqual(planDedupeAll(c, [normal, priv], 1).close, [priv.id]);
   assert.deepEqual(planDedupeAll(cfg(), [normal, priv], 1).close, []);
+});
+
+// ---- excluded groups ----
+
+test('excludedGroupIds: the defaults match the titles Claude in Chrome gives its groups', () => {
+  const group = (id, title) => ({ id, title, color: 'grey', collapsed: false, windowId: 1 });
+  const groups = [
+    group(1, 'Claude'),
+    group(2, 'Claude (MCP)'),
+    group(3, '⌛Claude'),
+    group(4, '🔔Claude'),
+    group(5, '✅Claude (MCP)'),
+    group(6, 'Claude stuff'),
+    group(7, 'My Claude'),
+    group(8, '⌛ Claude'),
+    group(9, ''),
+    { id: 10 },
+  ];
+  assert.deepEqual([...excludedGroupIds(cfg(), groups)], [1, 2, 3, 4, 5]);
+});
+
+test('excludedGroupIds: user globs, case-insensitive; an empty list excludes nothing', () => {
+  const groups = [
+    { id: 1, title: 'Work – Q3' },
+    { id: 2, title: 'work' },
+    { id: 3, title: 'Claude' },
+  ];
+  assert.deepEqual([...excludedGroupIds(cfg({ excludedGroups: ['work*'] }), groups)], [1, 2]);
+  assert.deepEqual([...excludedGroupIds(cfg({ excludedGroups: [] }), groups)], []);
+});
+
+test('a navigation inside an excluded group is never a duplicate', () => {
+  const existing = tab('https://a.com/');
+  const nav = tab('chrome://newtab/', { groupId: 5 });
+  assert.equal(findExistingTab(cfg(), [existing], nav, 'https://a.com/', null, new Set([5])), null);
+  assert.equal(findExistingTab(cfg(), [existing], nav, 'https://a.com/', null), existing);
+});
+
+test('a tab inside an excluded group never blocks a navigation outside it', () => {
+  const excluded = tab('https://a.com/', { groupId: 5 });
+  const plain = tab('https://a.com/');
+  const nav = tab('chrome://newtab/');
+  assert.equal(findExistingTab(cfg(), [excluded], nav, 'https://a.com/', null, new Set([5])), null);
+  assert.equal(findExistingTab(cfg(), [excluded, plain], nav, 'https://a.com/', null, new Set([5])), plain);
+});
+
+test('planDedupeAll leaves tabs in excluded groups alone', () => {
+  const excluded = tab('https://a.com/', { groupId: 5, active: true });
+  const p1 = tab('https://a.com/');
+  const p2 = tab('https://a.com/');
+  assert.deepEqual(planDedupeAll(cfg(), [excluded, p1, p2], 1, new Set([5])).close, [p2.id]);
+  assert.deepEqual(planDedupeAll(cfg(), [excluded, tab('https://a.com/', { groupId: 5 })], 1, new Set([5])).close, []);
 });

@@ -1,4 +1,5 @@
 import { analyzeUrl, keyFor } from './matching.js';
+import { matchesAnyGlob } from './glob.js';
 
 export function tabUrl(tab) {
   return tab.url || tab.pendingUrl || '';
@@ -16,6 +17,18 @@ function isConsidered(config, tab) {
 // Chrome reports -1 (TAB_GROUP_ID_NONE) for ungrouped tabs; treat "no group" as a group of its own.
 export function groupOf(tab) {
   return tab.groupId ?? -1;
+}
+
+/** Ids of the tab groups (from `chrome.tabGroups.query`) whose title matches `config.excludedGroups`. */
+export function excludedGroupIds(config, groups) {
+  return new Set(groups.filter((g) => matchesAnyGlob(config.excludedGroups, g.title ?? '', 'iu')).map((g) => g.id));
+}
+
+// Excluded tabs are never duplicates and never block others: those in an excluded group, or any
+// grouped tab under groupPolicy 'exclude'.
+function isExcluded(config, tab, excludedIds) {
+  const group = groupOf(tab);
+  return excludedIds.has(group) || (config.groupPolicy === 'exclude' && group !== -1);
 }
 
 const CRITERIA = {
@@ -47,15 +60,19 @@ function best(tabs, ref, config) {
 
 /**
  * Finds an already open tab showing the same page as `url` (the page `tab` is navigating to).
+ * Tabs in `excludedIds` (group ids, see `excludedGroupIds`) neither count as duplicates nor are
+ * matched against.
  * @returns {object|null} the tab to focus, or null.
  */
-export function findExistingTab(config, tabs, tab, url, rule) {
+export function findExistingTab(config, tabs, tab, url, rule, excludedIds = new Set()) {
+  if (isExcluded(config, tab, excludedIds)) return null;
   const key = keyFor(config, url, rule);
   if (!key) return null;
   const candidates = tabs.filter(
     (t) =>
       t.id !== tab.id &&
       t.id != null &&
+      !isExcluded(config, t, excludedIds) &&
       (config.incognitoPolicy === 'shared' || !!t.incognito === !!tab.incognito) &&
       (config.scope === 'all' || t.windowId === tab.windowId) &&
       (config.groupPolicy !== 'same' || groupOf(t) === groupOf(tab)) &&
@@ -68,12 +85,13 @@ export function findExistingTab(config, tabs, tab, url, rule) {
 
 /**
  * Groups every open tab by key and picks which ones to close so that one tab per page remains.
+ * Tabs in `excludedIds` (group ids, see `excludedGroupIds`) are left out entirely.
  * @returns {{ close: number[], keep: Array<{key:string, tab:object, duplicates:object[]}> }}
  */
-export function planDedupeAll(config, tabs, activeWindowId) {
+export function planDedupeAll(config, tabs, activeWindowId, excludedIds = new Set()) {
   const groups = new Map();
   for (const t of tabs) {
-    if (t.id == null || !isConsidered(config, t)) continue;
+    if (t.id == null || !isConsidered(config, t) || isExcluded(config, t, excludedIds)) continue;
     const { act, key } = analyzeUrl(config, tabUrl(t));
     if (!act || !key) continue;
     const groupKey = [

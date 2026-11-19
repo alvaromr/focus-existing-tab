@@ -46,8 +46,10 @@
   "pinnedIgnore": { "message": "Ignorarlas por completo" },
   "pinnedNormal": { "message": "Tratarlas como las demás" },
   "fGroups": { "message": "Grupos de pestañas" },
-  "groupIgnore": { "message": "Ignorar los grupos (cualquier pestaña cuenta)" },
+  "groupIgnore": { "message": "Los grupos no cuentan (se compara con todas las pestañas)" },
   "groupSame": { "message": "Solo pestañas del mismo grupo (sin grupo cuenta como grupo)" },
+  "groupExclude": { "message": "No actuar en pestañas con grupo" },
+  "fExcludedGroups": { "message": "Grupos excluidos" },
   "fIncognito": { "message": "Pestañas de incógnito" },
   "incognitoSeparate": { "message": "Nunca mezclar normales e incógnito" },
   "incognitoShared": { "message": "Comparar entre normales e incógnito (requiere permiso en incógnito)" },
@@ -172,7 +174,10 @@
     "message": "Las pestañas fijadas pueden protegerse (se enfocan pero nunca se cierran), ignorarse (ni se enfocan ni se cierran) o tratarse como cualquier otra."
   },
   "helpGroups": {
-    "message": "«Ignorar»: una pestaña dentro de un grupo y otra fuera son duplicadas. «Solo mismo grupo»: solo se comparan pestañas del mismo grupo; las que no tienen grupo forman un grupo más. Para preferir el mismo grupo sin excluir el resto, usa el criterio «mismo grupo» en la prioridad."
+    "message": "«Los grupos no cuentan»: una pestaña dentro de un grupo y otra fuera son duplicadas. «Solo mismo grupo»: solo se comparan pestañas del mismo grupo; las que no tienen grupo forman un grupo más. «No actuar en pestañas con grupo»: una pestaña de cualquier grupo nunca es duplicada ni bloquea a otra; solo se comparan las pestañas sin grupo. Para preferir el mismo grupo sin excluir el resto, usa el criterio «mismo grupo» en la prioridad."
+  },
+  "helpExcludedGroups": {
+    "message": "Títulos de grupos de pestañas, uno por línea o separados por comas. Las pestañas de estos grupos nunca son duplicadas ni impiden abrir la misma página en otro sitio; «Desduplicar todas» no las toca. No distingue mayúsculas; * cubre cualquier texto y ? un carácter. Los valores por defecto son los grupos de Claude in Chrome (la automatización del navegador de Claude Code): si se bloquea su navegación, pierde su grupo."
   },
   "helpIncognito": {
     "message": "Las pestañas de incógnito solo son visibles si permites la extensión en incógnito (chrome://extensions). «Nunca mezclar»: una pestaña normal solo casa con normales y una de incógnito con incógnito."

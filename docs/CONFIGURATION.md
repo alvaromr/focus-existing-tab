@@ -61,6 +61,7 @@ A glob without `/` is a domain pattern; with `/` it is a URL pattern. `*` matche
   "scope": "all",
   "pinnedPolicy": "protect",
   "groupPolicy": "ignore",
+  "excludedGroups": ["Claude", "Claude (MCP)", "?Claude", "?Claude (MCP)"],
   "incognitoPolicy": "separate",
   "windowTypes": "all",
   "ranking": ["window", "active", "pinned", "loaded"],
@@ -82,18 +83,19 @@ A glob without `/` is a domain pattern; with `/` it is a URL pattern. `*` matche
 }
 ```
 
-| Field             | Values                                                  | Meaning                                                                   |
-| ----------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `mode`            | `blacklist`, `whitelist`                                | Act on everything except the blacklist, or only on the whitelist          |
-| `inTabNavigation` | `back`, `focus`, `close`, `ignore`                      | What to do when the duplicate URL opens in a tab that already had a page  |
-| `scope`           | `all`, `window`                                         | Search every window or only the current one                               |
-| `pinnedPolicy`    | `protect`, `ignore`, `normal`                           | Pinned tabs: never close / ignore / treat like any other                  |
-| `groupPolicy`     | `ignore`, `same`                                        | Tab groups: no effect / same group only (ungrouped is a group of its own) |
-| `incognitoPolicy` | `separate`, `shared`                                    | Never mix normal and incognito / compare across them                      |
-| `windowTypes`     | `all`, `normal`                                         | Count app and popup windows (PWAs) or only regular windows                |
-| `ranking`         | list of `group`, `window`, `active`, `pinned`, `loaded` | Ordered criteria to pick the tab to focus or keep                         |
-| `tieBreak`        | `oldest`, `newest`                                      | Final tie-break                                                           |
-| rule `query.*`    | `null` or a value                                       | `null` inherits the global setting                                        |
+| Field             | Values                                                  | Meaning                                                                  |
+| ----------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `mode`            | `blacklist`, `whitelist`                                | Act on everything except the blacklist, or only on the whitelist         |
+| `inTabNavigation` | `back`, `focus`, `close`, `ignore`                      | What to do when the duplicate URL opens in a tab that already had a page |
+| `scope`           | `all`, `window`                                         | Search every window or only the current one                              |
+| `pinnedPolicy`    | `protect`, `ignore`, `normal`                           | Pinned tabs: never close / ignore / treat like any other                 |
+| `groupPolicy`     | `ignore`, `same`, `exclude`                             | Tab groups: no effect / same group only / grouped tabs left alone        |
+| `excludedGroups`  | list of group title globs                               | Groups whose tabs are never deduplicated                                 |
+| `incognitoPolicy` | `separate`, `shared`                                    | Never mix normal and incognito / compare across them                     |
+| `windowTypes`     | `all`, `normal`                                         | Count app and popup windows (PWAs) or only regular windows               |
+| `ranking`         | list of `group`, `window`, `active`, `pinned`, `loaded` | Ordered criteria to pick the tab to focus or keep                        |
+| `tieBreak`        | `oldest`, `newest`                                      | Final tie-break                                                          |
+| rule `query.*`    | `null` or a value                                       | `null` inherits the global setting                                       |
 
 On import, unknown keys are dropped, invalid values fall back to defaults and invalid rules
 (malformed regex, empty pattern) are removed with a warning. Files over 1 MB are rejected.
@@ -126,8 +128,17 @@ says so.
   originating tab.
 - **Groups**: with `ignore`, a tab inside a group and one outside are duplicates. With `same` only
   tabs in the same group are compared and "no group" counts as a group (a new ungrouped tab only
-  matches ungrouped ones). To prefer the same group without excluding the rest, put the "same
+  matches ungrouped ones). With `exclude` every grouped tab is left alone, as if its group were in
+  `excludedGroups`: only ungrouped tabs are compared. To prefer the same group without excluding the rest, put the "same
   group" criterion first in the priority list. Closing the only tab of a group removes the group.
+- **Excluded groups**: tabs in a group whose title matches `excludedGroups` are left alone, whatever
+  the other settings: opening a page there is never a duplicate, they never block opening the same
+  page elsewhere, and "Deduplicate all" skips them. Patterns are globs over the whole title (`*`
+  any run, `?` one character), case-insensitive. The defaults cover Claude in Chrome, the browser
+  automation Claude Code uses: it works in its own group, titled `Claude` or `Claude (MCP)` and
+  prefixed with `⌛`, `🔔` or `✅` while it works, and blocking its navigation makes it lose that
+  group. A group of your own with one of those titles is excluded too; empty the list to turn
+  exclusion off.
 - **Deduplicate all** always closes duplicates (even when "Close the duplicate tab" is off),
   honouring lists, pinned policy and scope (window, groups, incognito, window types).
 - **Case-insensitive host**: the browser's URL parser already lowercases the host; the option exists

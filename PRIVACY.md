@@ -30,6 +30,7 @@ happens inside your browser.
 | Permission      | Reason                                                                       |
 | --------------- | ---------------------------------------------------------------------------- |
 | `tabs`          | Read the URLs of open tabs, activate a tab, close the duplicate and go back. |
+| `tabGroups`     | Read tab group titles to recognise the excluded groups and skip them.        |
 | `webNavigation` | Detect every navigation before it loads so the extension can act in time.    |
 | `storage`       | Save your configuration and the counter.                                     |
 

@@ -76,11 +76,40 @@ try {
     (await pages()).some((t) => t.targetId === b),
   );
 
-  // 6. Badge counter.
+  // 6. Excluded groups, by default Claude in Chrome's ("Claude", with a status prefix while it
+  // works), are isolated both ways: Claude may open a page the user has open, and its tabs never
+  // block the user.
+  const claude = await evaluate(
+    swSession,
+    `(async () => {
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const blank = await chrome.tabs.create({ url: 'about:blank' });
+      const groupId = await chrome.tabs.group({ tabIds: [blank.id] });
+      await chrome.tabGroups.update(groupId, { title: '⌛Claude' });
+      await chrome.tabs.update(blank.id, { url: '${BASE}/a' });
+      await wait(1500);
+      const inGroup = await chrome.tabs.get(blank.id).catch(() => null);
+      return { groupId, tabId: blank.id, url: inGroup?.url ?? null };
+    })()`,
+  );
+  check('Claude group may open a page open elsewhere', claude.url === `${BASE}/a`, JSON.stringify(claude));
+  await evaluate(swSession, `chrome.tabs.update(${claude.tabId}, { url: '${BASE}/d' })`);
+  await sleep(1000);
+  await open(`${BASE}/d`);
+  await sleep(1500);
+  check(
+    'Claude group tab does not block the user',
+    (await pages()).filter((t) => t.url === `${BASE}/d`).length === 2,
+    await urls(),
+  );
+  await evaluate(swSession, `chrome.tabs.remove(${claude.tabId})`);
+  await sleep(300);
+
+  // 7. Badge counter.
   const badge = await evaluate(swSession, 'chrome.action.getBadgeText({})');
   check('badge shows counter', badge === '3', `badge=${badge}`);
 
-  // 7. Popup: toggle off, open duplicates (kept), toggle on, dedupe-all closes them.
+  // 8. Popup: toggle off, open duplicates (kept), toggle on, dedupe-all closes them.
   const popup = await open(`chrome-extension://${extId}/popup/popup.html`);
   await sleep(800);
   const popupSession = await attach(popup);
@@ -111,13 +140,16 @@ try {
     popupMsg,
   );
 
-  // 8. Options page loads, validates and saves.
+  // 9. Options page loads, validates and saves.
   const options = await open(`chrome-extension://${extId}/options/options.html`);
   await sleep(800);
   const optSession = await attach(options);
   const o = await evaluate(
     optSession,
     `(async () => {
+      const groupsField = document.querySelector('[name="excludedGroups"]');
+      const shownGroups = groupsField.value;
+      groupsField.value = shownGroups + '\\nWork';
       document.querySelector('button.add[data-list="blacklist"]').click();
       const row = document.querySelector('table[data-list="blacklist"] tbody tr:last-child');
       row.querySelector('.r-pattern').value = '(';
@@ -132,11 +164,16 @@ try {
       const { config } = await chrome.storage.sync.get('config');
       document.getElementById('testUrl').value = 'https://online.bank.com/x';
       document.getElementById('testUrl').dispatchEvent(new Event('input'));
-      return { errorShown, saved: config.blacklist.map(r => r.pattern), status: document.getElementById('status').textContent, test: document.getElementById('testDecision').textContent };
+      return { errorShown, shownGroups, savedGroups: config.excludedGroups, saved: config.blacklist.map(r => r.pattern), status: document.getElementById('status').textContent, test: document.getElementById('testDecision').textContent };
     })()`,
   );
   check('options validates invalid regex', o.errorShown === true, JSON.stringify(o));
   check('options saves a rule and tester reflects it', o.saved?.[0] === 'bank.com' && /No act|No actúa/.test(o.test));
+  check(
+    'options shows and saves excluded groups',
+    o.shownGroups === 'Claude\nClaude (MCP)\n?Claude\n?Claude (MCP)' && o.savedGroups?.at(-1) === 'Work',
+    JSON.stringify({ shown: o.shownGroups, saved: o.savedGroups }),
+  );
   await sleep(500);
 
   const pageErrors = events.filter(
