@@ -18,6 +18,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: bash scripts/ci/install-gitleaks.sh
       - run: pnpm check
       - name: Check tag matches manifest version
         run: test "v$(node -p "require('./manifest.json').version")" = "${GITHUB_REF_NAME}"

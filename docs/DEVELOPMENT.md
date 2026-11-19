@@ -10,7 +10,8 @@ Plain JavaScript with ES modules (Manifest V3), no build step. The extension has
 - pnpm: the version in `package.json` `packageManager`. `pnpm-workspace.yaml` blocks dependency
   install scripts, makes every new version wait `minimumReleaseAge` and refuses trust downgrades;
   its comments give the reason for each setting, override and ignored advisory.
-- `shellcheck` on the `PATH`, for `pnpm lint`.
+- `shellcheck` and `gitleaks` on the `PATH`, for `pnpm lint` and `pnpm guards` (CI installs gitleaks
+  with `scripts/ci/install-gitleaks.sh`, pinned by version and checksum).
 - For the e2e, a browser that honours `--load-extension`: Brave, Chromium or Chrome for Testing
   (branded Google Chrome ≥ 137 ignores it).
 
@@ -18,7 +19,8 @@ Plain JavaScript with ES modules (Manifest V3), no build step. The extension has
 
 ```bash
 pnpm install      # development tooling (ESLint, Prettier, TypeScript, @types/chrome) and git hooks
-pnpm check        # the gate: lint + typecheck + coverage, the same as CI and the pre-commit hook
+pnpm check        # the gate: lint + typecheck + guards + coverage, the same as CI and the pre-commit hook
+pnpm guards       # gitleaks over the git history, and the 400-line cap per code file
 pnpm verify       # heavy checks run by the pre-push hook
 pnpm fix          # ESLint --fix + Prettier --write, then the gate
 pnpm audit        # dependency advisories
@@ -64,6 +66,8 @@ scripts/package.sh               builds the zip
 scripts/smoke-package.sh         e2e against the unpacked zip
 scripts/release-notes.sh         one version's changelog section, for the GitHub Release
 scripts/hooks/                   git hooks (installed through .githooks/)
+scripts/check-file-size.js       gate guard: 400-line cap per code file
+scripts/ci/install-gitleaks.sh   pinned gitleaks for the CI runners
 scripts/release.js               version bump, changelog, commit and tag
 scripts/make-icons.js            generates the PNG icons (no dependencies)
 store/                           Web Store listing: copy, checklist and screenshots
@@ -99,7 +103,7 @@ accepts, and the e2e in the oldest Chrome that `minimum_chrome_version` accepts 
 `pnpm install` points `core.hooksPath` at `.githooks/`, whose one-line scripts call
 `scripts/hooks/*.js`:
 
-- `pre-commit`: the gate, when something is staged.
+- `pre-commit`: when something is staged, gitleaks over the staged changes, then the gate.
 - `commit-msg`: Conventional Commits, subject of at most 72 characters.
 - `pre-push`: refuses moving or deleting a published tag, then runs `pnpm verify`.
 - `reference-transaction`: refuses moving or deleting a local tag. `git update-ref -d <tag> <value>`

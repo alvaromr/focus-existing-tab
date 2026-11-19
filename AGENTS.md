@@ -8,7 +8,8 @@ its users; distributed through GitHub Releases.
 All are `package.json` scripts; the full list with one line each is in
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#commands).
 
-- Gate: `pnpm check` (lint, type check, unit tests at 100% coverage). Fix: `pnpm fix`.
+- Gate: `pnpm check` (lint, type check, secret scan and file-size cap, unit tests at 100% coverage).
+  Fix: `pnpm fix`.
 - Before push: `pnpm verify` (gate, audit, mutation, e2e), run by the pre-push hook.
 - Run: load the folder as an unpacked extension in `chrome://extensions`; build the zip with
   `pnpm package`; release with `pnpm release` (see docs/DEVELOPMENT.md, "Versioning and releases").
