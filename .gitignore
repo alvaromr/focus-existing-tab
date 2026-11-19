@@ -1,3 +1,21 @@
+# build output and dependencies
 dist/
 node_modules/
+
+# test and tool output
+coverage/
+reports/
+.stryker-tmp/
+*.log
+
+# local configuration and secrets
+.env
+.env.*
+*.local.json
+
+# editors and OS
+.idea/
+.vscode/
+*.swp
 .DS_Store
+Thumbs.db
