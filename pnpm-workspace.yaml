@@ -4,6 +4,10 @@ minimumReleaseAge: 10080 # only install versions published >= 7 days ago (strict
 trustPolicy: no-downgrade # never update to a version with weaker provenance than the installed one
 verifyDepsBeforeRun: error # refuse to run scripts if node_modules does not match the lockfile
 allowBuilds: {} # no dependency may run preinstall/postinstall; add packages here explicitly
+overrides:
+  # typed-rest-client 2.3.1 (via Stryker) pins qs 6.15.1, which has four DoS advisories fixed by
+  # 6.16.2. Remove once typed-rest-client depends on a fixed qs.
+  typed-rest-client>qs: 6.16.2
 auditConfig:
   ignoreGhsas:
     # minimatch < 11.0.1 globparts DoS, reached only through ESLint's own config globs (dev-only,

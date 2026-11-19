@@ -22,6 +22,8 @@ test('host glob with wildcards', () => {
   assert.equal(ruleMatches(glob('*.google.com'), 'https://google.com/'), false);
   assert.equal(ruleMatches(glob('*google*'), 'https://google.es/'), true);
   assert.equal(ruleMatches(glob('git?ub.com'), 'https://github.com/'), true);
+  // A trailing * keeps the subdomain prefix; only a leading * replaces it.
+  assert.equal(ruleMatches(glob('example.*'), 'https://www.example.org/'), true);
 });
 
 test('URL glob is anchored and scheme-less unless the pattern has a scheme', () => {
@@ -63,8 +65,8 @@ test('blacklist mode: act on everything except blacklisted', () => {
 
 test('whitelist mode: act only on whitelisted', () => {
   const c = cfg({ mode: 'whitelist', whitelist: ['docs.example.com'] });
-  assert.equal(resolveDecision(c, 'https://docs.example.com/x').act, true);
-  assert.equal(resolveDecision(c, 'https://example.com/x').reason, 'not-whitelisted');
+  assert.deepEqual(resolveDecision(c, 'https://docs.example.com/x'), { act: true, reason: 'ok', rule: c.whitelist[0] });
+  assert.deepEqual(resolveDecision(c, 'https://example.com/x'), { act: false, reason: 'not-whitelisted', rule: null });
 });
 
 test('disabled config never acts', () => {
@@ -164,7 +166,8 @@ test('blacklist wins over whitelist overrides in blacklist mode', () => {
 });
 
 test('invalid or internal URLs are reported as internal', () => {
-  assert.equal(analyzeUrl(cfg(), 'not a url').reason, 'internal');
-  assert.equal(analyzeUrl(cfg(), 'chrome-extension://abc/x.html').reason, 'internal');
-  assert.equal(analyzeUrl(cfg(), '').reason, 'internal');
+  const internal = { act: false, reason: 'internal', rule: null, key: null };
+  assert.deepEqual(analyzeUrl(cfg(), 'not a url'), internal);
+  assert.deepEqual(analyzeUrl(cfg(), 'chrome-extension://abc/x.html'), internal);
+  assert.deepEqual(analyzeUrl(cfg(), ''), internal);
 });

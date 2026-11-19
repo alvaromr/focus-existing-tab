@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
-  { ignores: ['dist/', 'node_modules/', 'store/'] },
+  { ignores: ['dist/', 'node_modules/', 'store/', 'reports/', '.stryker-tmp/'] },
   js.configs.recommended,
   {
     languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },

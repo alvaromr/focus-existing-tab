@@ -23,6 +23,7 @@ test('a new tab is closed; a tab that had a page follows inTabNavigation', () =>
 test('closing falls back to focusing when closeDuplicate is off or the tab may not be closed', () => {
   assert.equal(chooseAction(cfg({ closeDuplicate: false }), plain, true), 'focus');
   assert.equal(chooseAction(cfg({ closeDuplicate: false, inTabNavigation: 'close' }), plain, false), 'focus');
+  assert.equal(chooseAction(cfg({ closeDuplicate: false, inTabNavigation: 'back' }), plain, false), 'back');
   assert.equal(chooseAction(cfg({ pinnedPolicy: 'protect' }), pinned, true), 'focus');
   assert.equal(chooseAction(cfg({ pinnedPolicy: 'normal' }), pinned, true), 'close');
 });

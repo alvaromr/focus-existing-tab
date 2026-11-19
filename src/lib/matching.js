@@ -17,6 +17,7 @@ const cache = new Map();
 function compileRule(rule) {
   const key = `${rule.type}:${rule.pattern}`;
   let compiled = cache.get(key);
+  // Stryker disable next-line ConditionalExpression: the cache only saves recompiling; skipping it changes no result.
   if (compiled) return compiled;
 
   if (rule.type === 'regex') {
@@ -32,6 +33,7 @@ function compileRule(rule) {
     const subject = rule.pattern.includes('://') ? SUBJECTS.href : SUBJECTS.schemeless;
     compiled = { re: new RegExp(`^${body}$`), subject };
   }
+  // Stryker disable next-line CallExpression: cache only, as above.
   cache.set(key, compiled);
   return compiled;
 }

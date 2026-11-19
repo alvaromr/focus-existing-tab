@@ -16,14 +16,15 @@ export function isBlankUrl(url) {
   return BLANK_URLS.has(url || '');
 }
 
+// Stryker disable BlockStatement: an empty catch returns undefined, as falsy as null for every caller.
 export function parseUrl(url) {
   try {
     return new URL(url);
-    // Stryker disable next-line BlockStatement: an empty catch returns undefined, as falsy as null for every caller.
   } catch {
     return null;
   }
 }
+// Stryker restore BlockStatement
 
 // Only regular web pages are deduplicated. Everything else (chrome://, about:,
 // chrome-extension://, file://, data:, view-source:, devtools://…) is internal.
@@ -44,7 +45,9 @@ function filterParams(entries, query) {
 function compareEntries([ka, va], [kb, vb]) {
   if (ka < kb) return -1;
   if (ka > kb) return 1;
+  // Stryker disable next-line EqualityOperator: entries equal in name and value are identical, so their order is unobservable.
   if (va < vb) return -1;
+  // Stryker disable next-line all: reached only with va >= vb; for equal values, as above.
   return va > vb ? 1 : 0;
 }
 

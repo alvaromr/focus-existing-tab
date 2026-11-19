@@ -14,6 +14,9 @@
 
 const CONFIG_VERSION = 1;
 
+// Allowed values. The first one of each list is also its default, so a mutant that drops it only
+// turns "accepted" into "replaced by the same default".
+// Stryker disable StringLiteral
 const MODES = ['blacklist', 'whitelist'];
 const IN_TAB_ACTIONS = ['back', 'focus', 'close', 'ignore'];
 const SCOPES = ['all', 'window'];
@@ -21,9 +24,10 @@ const PINNED_POLICIES = ['protect', 'ignore', 'normal'];
 const GROUP_POLICIES = ['ignore', 'same', 'exclude'];
 const INCOGNITO_POLICIES = ['separate', 'shared'];
 const WINDOW_TYPES = ['all', 'normal'];
-export const RANK_CRITERIA = ['group', 'window', 'active', 'pinned', 'loaded'];
 const TIE_BREAKS = ['oldest', 'newest'];
 const RULE_TYPES = ['glob', 'regex'];
+// Stryker restore StringLiteral
+export const RANK_CRITERIA = ['group', 'window', 'active', 'pinned', 'loaded'];
 
 export const DEFAULT_CONFIG = Object.freeze({
   version: CONFIG_VERSION,
@@ -195,7 +199,7 @@ function normalizeRules(raw, listName, errors) {
  * @returns {{ config: Config, errors: Array<{list:string,index:number,code:string,pattern?:string}> }}
  */
 export function normalizeConfig(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {};
+  const src = raw ?? {}; // a non-object input carries none of the keys, so every field falls back
   const errors = [];
   const d = DEFAULT_CONFIG;
   const config = {

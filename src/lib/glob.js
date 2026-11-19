@@ -11,8 +11,10 @@ export function globToRegExpSource(glob) {
 function globToRegExp(glob, flags) {
   const key = `${flags}:${glob}`;
   let re = cache.get(key);
+  // Stryker disable next-line ConditionalExpression: the cache only saves recompiling; skipping it changes no result.
   if (!re) {
     re = new RegExp(`^${globToRegExpSource(glob)}$`, flags);
+    // Stryker disable next-line CallExpression: cache only, as above.
     cache.set(key, re);
   }
   return re;

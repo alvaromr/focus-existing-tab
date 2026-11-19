@@ -124,7 +124,20 @@ test('tabs without id and non-eligible URLs are ignored', () => {
   assert.equal(findExistingTab(c, [noId], nav, 'https://a.com/', null), null);
   assert.equal(findExistingTab(c, [tab('https://a.com/')], nav, 'chrome://settings', null), null);
   assert.equal(findExistingTab(c, [tab('https://a.com/')], nav, 'nope', null), null);
-  assert.deepEqual(planDedupeAll(c, [noId, noId, tab('chrome://a'), tab('chrome://a')], 1).close, []);
+  const otherNoId = { ...noId };
+  assert.deepEqual(planDedupeAll(c, [noId, otherNoId, tab('chrome://a'), tab('chrome://a')], 1).close, []);
+});
+
+test('internal pages never match each other, even both unparseable', () => {
+  const nav = tab('chrome://newtab/');
+  assert.equal(findExistingTab(cfg(), [tab('chrome://settings/')], nav, 'chrome://settings/', null), null);
+});
+
+test('a higher-ranked tab wins over an older one', () => {
+  const nav = tab('chrome://newtab/');
+  const older = tab('https://a.com/');
+  const newerActive = tab('https://a.com/', { active: true });
+  assert.equal(findExistingTab(cfg(), [newerActive, older], nav, 'https://a.com/', null), newerActive);
 });
 
 test('a loading tab (pendingUrl only) counts as a candidate', () => {
@@ -152,6 +165,11 @@ test('pinned policy in planDedupeAll', () => {
     [pinnedDup.id, plain.id].sort(),
   );
   assert.deepEqual(planDedupeAll(cfg({ pinnedPolicy: 'ignore' }), [active, pinnedDup, plain], 1).close, [plain.id]);
+  // Ignored pinned tabs do not even compete to be kept.
+  const pinnedActive = tab('https://b.com/', { pinned: true, active: true });
+  const b1 = tab('https://b.com/');
+  const b2 = tab('https://b.com/');
+  assert.deepEqual(planDedupeAll(cfg({ pinnedPolicy: 'ignore' }), [pinnedActive, b1, b2], 1).close, [b2.id]);
 });
 
 test('planDedupeAll prefers the active window and tolerates an unknown one', () => {

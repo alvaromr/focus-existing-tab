@@ -28,12 +28,22 @@ test('internal URLs are not eligible', () => {
   assert.equal(isEligibleUrl('http://a.com'), true);
 });
 
-test('blank URLs', () => {
-  assert.equal(isBlankUrl(''), true);
-  assert.equal(isBlankUrl(undefined), true);
-  assert.equal(isBlankUrl('chrome://newtab/'), true);
-  assert.equal(isBlankUrl('about:blank'), true);
+test('blank URLs: empty and the new-tab pages of Chromium browsers', () => {
+  for (const url of [
+    '',
+    undefined,
+    'about:blank',
+    'about:newtab',
+    'chrome://newtab/',
+    'chrome://new-tab-page/',
+    'chrome://new-tab-page-third-party/',
+    'edge://newtab/',
+    'brave://newtab/',
+  ]) {
+    assert.equal(isBlankUrl(url), true, url);
+  }
   assert.equal(isBlankUrl('https://a.com'), false);
+  assert.equal(isBlankUrl('chrome://settings/'), false);
 });
 
 test('default normalization: fragment, www, scheme, trailing slash, host case', () => {
@@ -42,6 +52,8 @@ test('default normalization: fragment, www, scheme, trailing slash, host case', 
   assert.equal(key('http://EXAMPLE.com/path'), expected);
   assert.equal(key('https://example.com/path/'), expected);
   assert.equal(key('https://example.com/path///'), expected);
+  // Only a leading "www." is dropped.
+  assert.equal(key('https://mywww.example.com/'), 'http://mywww.example.com/');
 });
 
 test('root path keeps a single slash', () => {

@@ -25,6 +25,7 @@ pnpm format       # Prettier --write
 pnpm typecheck    # tsc --checkJs against the Chrome API types (via JSDoc)
 pnpm test         # unit tests (native node --test runner)
 pnpm coverage     # unit tests with the coverage thresholds (100%)
+pnpm mutation     # Stryker over src/lib (stryker.config.json); report in reports/mutation/
 pnpm test:e2e     # real run in headless Chromium
 pnpm screenshots  # regenerate store/screenshots/*.png (same browser as the e2e)
 pnpm package      # dist/focus-existing-tab-<version>.zip
@@ -72,6 +73,9 @@ e2e covers them (without a metric) and the type check validates them against `@t
 - **Unit** (`test/*.test.js`): normalization, matching, configuration, tab selection and the
   navigation state machine (real sequences: new tab, redirect, activation without
   `onBeforeNavigate`, fast commit, deferred `goBack`, reload, error).
+- **Mutation** (`pnpm mutation`): Stryker mutates `src/lib` and runs the unit suite per mutant; the
+  run fails below a 100% score. An equivalent mutant (one no test can tell apart, such as a cache
+  being skipped) is disabled in place with a `// Stryker disable` comment stating why.
 - **E2E** (`test/e2e/smoke.js`): launches a headless browser with a temporary profile, loads the
   extension and checks 16 scenarios over the DevTools protocol (duplicate tab, redirect, in-tab
   navigation, reload, badge, popup, options, absence of errors). It finds Brave/Chromium in the

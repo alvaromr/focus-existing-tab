@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeConfig, DEFAULT_CONFIG, parseList, effectiveQuery, compileRegex } from '../src/lib/config.js';
+import {
+  normalizeConfig,
+  DEFAULT_CONFIG,
+  parseList,
+  effectiveQuery,
+  compileRegex,
+  createRule,
+} from '../src/lib/config.js';
 
 test('empty input yields the defaults', () => {
   const { config, errors } = normalizeConfig(undefined);
@@ -64,6 +71,7 @@ test('rules: string shorthand, defaults and per-rule query overrides', () => {
 test('invalid rules are removed and reported', () => {
   const { config, errors } = normalizeConfig({
     blacklist: ['', { pattern: '(', type: 'regex' }, 42, 'ok.com'],
+    whitelist: [''],
   });
   assert.deepEqual(
     config.blacklist.map((r) => r.pattern),
@@ -72,11 +80,18 @@ test('invalid rules are removed and reported', () => {
   assert.deepEqual(
     errors.map((e) => [e.list, e.index, e.code]),
     [
+      ['whitelist', 0, 'empty'],
       ['blacklist', 0, 'empty'],
       ['blacklist', 1, 'regex'],
       ['blacklist', 2, 'invalid'],
     ],
   );
+});
+
+test('a glob pattern is never compiled as a regex, so regex syntax in it is valid', () => {
+  const { config, errors } = normalizeConfig({ blacklist: [{ pattern: '(', type: 'glob' }] });
+  assert.deepEqual(errors, []);
+  assert.equal(config.blacklist[0].pattern, '(');
 });
 
 test('parseList trims, splits on newline/comma and dedupes', () => {
@@ -203,4 +218,74 @@ test('DEFAULT_CONFIG is deeply frozen', () => {
   assert.equal(Object.isFrozen(DEFAULT_CONFIG.query), true);
   assert.equal(Object.isFrozen(DEFAULT_CONFIG.query.ignored), true);
   assert.equal(Object.isFrozen(DEFAULT_CONFIG.normalization), true);
+});
+
+test('the defaults are the documented ones', () => {
+  assert.deepEqual(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), {
+    version: 1,
+    enabled: true,
+    mode: 'blacklist',
+    whitelist: [],
+    blacklist: [],
+    closeDuplicate: true,
+    focusWindow: true,
+    inTabNavigation: 'back',
+    scope: 'all',
+    pinnedPolicy: 'protect',
+    groupPolicy: 'ignore',
+    excludedGroups: ['Claude', 'Claude (MCP)', '?Claude', '?Claude (MCP)'],
+    incognitoPolicy: 'separate',
+    windowTypes: 'all',
+    ranking: ['window', 'active', 'pinned', 'loaded'],
+    tieBreak: 'oldest',
+    restoreMinimized: true,
+    actOnReload: false,
+    countFocusOnly: true,
+    showBadge: true,
+    normalization: {
+      ignoreFragment: true,
+      ignoreWww: true,
+      ignoreScheme: true,
+      ignoreTrailingSlash: true,
+      ignorePort: false,
+      caseInsensitiveHost: true,
+      caseInsensitivePath: false,
+    },
+    query: {
+      compare: true,
+      orderMatters: false,
+      ignored: [
+        'utm_*',
+        'fbclid',
+        'gclid',
+        'dclid',
+        'msclkid',
+        'yclid',
+        'mc_cid',
+        'mc_eid',
+        '_hsenc',
+        '_hsmi',
+        'igshid',
+      ],
+      significant: [],
+    },
+  });
+});
+
+test('createRule starts an empty glob rule that inherits every query setting', () => {
+  assert.deepEqual(createRule(), {
+    pattern: '',
+    type: 'glob',
+    enabled: true,
+    query: { compare: null, ignored: null, significant: null },
+  });
+});
+
+test('global significant parameters are parsed as a list', () => {
+  assert.deepEqual(normalizeConfig({ query: { significant: 'id, page' } }).config.query.significant, ['id', 'page']);
+});
+
+test('compileRegex only reads /body/flags when the whole pattern has that shape', () => {
+  assert.equal(compileRegex('x/a/').source, 'x\\/a\\/');
+  assert.equal(compileRegex('/a/x y').source, '\\/a\\/x y');
 });

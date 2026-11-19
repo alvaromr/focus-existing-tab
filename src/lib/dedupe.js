@@ -99,6 +99,7 @@ export function planDedupeAll(config, tabs, activeWindowId, excludedIds = new Se
     const { key } = analyzeUrl(config, tabUrl(t)); // null when the extension does not act on it
     if (!key) continue;
     const groupKey = JSON.stringify([
+      // Stryker disable next-line BooleanLiteral: inverting the label still keeps incognito and normal tabs apart.
       config.incognitoPolicy === 'separate' && !!t.incognito,
       config.scope === 'window' && t.windowId,
       config.groupPolicy === 'same' && groupOf(t),

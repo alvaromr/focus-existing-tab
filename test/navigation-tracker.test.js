@@ -31,6 +31,39 @@ test('seeded tabs (service worker start) provide their previous URL', () => {
   assert.equal(t.beforeNavigate(5, A).prevUrl, '');
 });
 
+test('a tab created with a URL reports it as previous; a late seed never overwrites what events told', () => {
+  const t = tracker();
+  t.tabCreated({ id: 7, url: A });
+  t.seed([{ id: 7, url: B }]);
+  assert.deepEqual(t.beforeNavigate(7, B), { wasNew: true, prevUrl: A });
+});
+
+test('a committed navigation is matched with its own onBeforeNavigate only once', () => {
+  const t = tracker();
+  t.seed([{ id: 1, url: B }]);
+  t.beforeNavigate(1, A);
+  assert.deepEqual(t.committed(1, A, 'link'), {});
+  // A second commit without onBeforeNavigate (prerender activation) must be checked.
+  assert.deepEqual(t.committed(1, A, 'link'), { check: { wasNew: false, prevUrl: A } });
+});
+
+test('the deferred goBack commit ends the "new tab" state', () => {
+  const t = tracker();
+  t.tabCreated({ id: 1, url: '' });
+  t.beforeNavigate(1, A);
+  t.scheduleGoBack(1, A, 'before');
+  assert.deepEqual(t.committed(1, A, 'typed'), { goBack: true });
+  assert.equal(t.beforeNavigate(1, B).wasNew, false);
+});
+
+test('at commit stage the goBack is immediate even if the tab committed again meanwhile', () => {
+  const t = tracker();
+  t.seed([{ id: 1, url: B }]);
+  t.committed(1, A, 'typed');
+  t.committed(1, B, 'typed');
+  assert.equal(t.scheduleGoBack(1, A, 'committed'), 'now');
+});
+
 test('redirect: committed URL differs from the one seen before -> check with the old previous URL', () => {
   const t = tracker();
   t.seed([{ id: 1, url: B }]);
@@ -87,7 +120,7 @@ test('skip marker lasts 2 s and is dropped on goBack failure or error', () => {
   t.goBackIssued(1);
   t.advance(1999);
   assert.equal(t.shouldSkip(1), true);
-  t.advance(2);
+  t.advance(1);
   assert.equal(t.shouldSkip(1), false);
   t.goBackIssued(2);
   t.goBackFailed(2);
@@ -116,6 +149,15 @@ test('tabRemoved forgets everything about the tab', () => {
   assert.equal(t.shouldSkip(1), false);
   assert.deepEqual(t.beforeNavigate(1, A), { wasNew: false, prevUrl: undefined });
   assert.deepEqual(t.committed(1, A, 'typed'), {});
+});
+
+test('tabRemoved also forgets a pending onBeforeNavigate and the navigation start', () => {
+  const t = tracker(1000);
+  t.seed([{ id: 1, url: B }]);
+  t.beforeNavigate(1, A, 1000);
+  t.tabRemoved(1);
+  assert.equal(t.startOf(1), 0);
+  assert.deepEqual(t.committed(1, A, 'typed'), { check: { wasNew: false, prevUrl: undefined } });
 });
 
 test('a tab that started navigating later is never the original of an earlier navigation', () => {
