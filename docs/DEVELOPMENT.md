@@ -49,6 +49,7 @@ src/lib/log.js                   the one console writer
 src/lib/glob.js                  minimal glob matcher
 src/chrome/storage.js            chrome.storage (sync/local)
 src/chrome/i18n.js               chrome.i18n strings for the pages
+src/ui/tokens.css                design tokens shared by the options page and the popup
 options/                         options page
 popup/                           popup
 test/*.test.js                   unit tests
