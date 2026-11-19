@@ -24,7 +24,7 @@ pnpm lint         # ESLint + Prettier --check + ShellCheck (needs `shellcheck` i
 pnpm format       # Prettier --write
 pnpm typecheck    # tsc --checkJs against the Chrome API types (via JSDoc)
 pnpm test         # unit tests (native node --test runner)
-pnpm coverage     # unit tests with thresholds: 100% lines and functions, 95% branches
+pnpm coverage     # unit tests with the coverage thresholds (100%)
 pnpm test:e2e     # real run in headless Chromium
 pnpm screenshots  # regenerate store/screenshots/*.png (same browser as the e2e)
 pnpm package      # dist/focus-existing-tab-<version>.zip

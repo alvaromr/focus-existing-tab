@@ -91,6 +91,8 @@ test('significant params win over ignored globs', () => {
 
 test('repeated params keep all values', () => {
   assert.equal(key('https://a.com/?x=2&x=1'), 'http://a.com/?x=1&x=2');
+  assert.equal(key('https://a.com/?x=1&x=2'), 'http://a.com/?x=1&x=2');
+  assert.equal(key('https://a.com/?x=1&b=0&x=1'), 'http://a.com/?b=0&x=1&x=1');
 });
 
 test('accepts URL objects', () => {

@@ -32,11 +32,9 @@ export function isEligibleUrl(url) {
 }
 
 function filterParams(entries, query) {
-  const significant = query.significant || [];
-  const ignored = query.ignored || [];
   return entries.filter(([name]) => {
-    if (matchesAnyGlob(significant, name)) return true;
-    if (matchesAnyGlob(ignored, name)) return false;
+    if (matchesAnyGlob(query.significant, name)) return true;
+    if (matchesAnyGlob(query.ignored, name)) return false;
     return query.compare;
   });
 }
