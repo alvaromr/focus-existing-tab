@@ -99,6 +99,20 @@ export const DEFAULT_CONFIG = Object.freeze({
   }),
 });
 
+/**
+ * A problem found while normalizing a list rule.
+ * @typedef {{ list: string, index: number, code: string, pattern?: string }} ConfigError
+ */
+/**
+ * Untrusted input (storage contents, imported JSON) read field by field; each field goes through a
+ * pick* helper or parseList, which checks its type.
+ * @typedef {Record<string, any>} UntrustedObject
+ */
+
+/**
+ * @param {Partial<Rule>} [overrides]
+ * @returns {Rule}
+ */
 export function createRule(overrides = {}) {
   return {
     pattern: '',
@@ -110,7 +124,11 @@ export function createRule(overrides = {}) {
   };
 }
 
-/** Splits a textarea/comma separated list into trimmed, unique, non-empty entries. */
+/**
+ * Splits a textarea/comma separated list into trimmed, unique, non-empty entries.
+ * @param {unknown} text
+ * @returns {string[]}
+ */
 export function parseList(text) {
   if (Array.isArray(text)) return [...new Set(text.map((s) => String(s).trim()).filter(Boolean))];
   return [
@@ -123,24 +141,39 @@ export function parseList(text) {
   ];
 }
 
+/**
+ * @template {string} T
+ * @param {unknown} value
+ * @param {readonly T[]} allowed
+ * @param {T} fallback
+ * @returns {T}
+ */
 function pickEnum(value, allowed, fallback) {
-  return allowed.includes(value) ? value : fallback;
+  return allowed.includes(/** @type {T} */ (value)) ? /** @type {T} */ (value) : fallback;
 }
 
+/** @param {unknown} value @param {boolean} fallback */
 function pickBool(value, fallback) {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+/** @param {unknown} value */
 function pickNullableBool(value) {
   return typeof value === 'boolean' ? value : null;
 }
 
-/** Ordered, de-duplicated subset of RANK_CRITERIA; anything else falls back to the default. */
+/**
+ * Ordered, de-duplicated subset of RANK_CRITERIA; anything else falls back to the default.
+ * @param {unknown} value
+ * @param {readonly string[]} fallback
+ * @returns {string[]}
+ */
 function pickRanking(value, fallback) {
   if (!Array.isArray(value)) return [...fallback];
   return [...new Set(value.filter((c) => RANK_CRITERIA.includes(c)))];
 }
 
+/** @param {unknown} value */
 function pickNullableList(value) {
   if (value == null) return null;
   return parseList(value);
@@ -150,18 +183,27 @@ function pickNullableList(value) {
  * Compiles a regex rule. Accepts `/body/flags` or a bare body. Throws on invalid patterns.
  * The `g` and `y` flags are dropped: they make `test()` stateful (lastIndex), which would
  * alternate results on a cached RegExp.
+ * @param {string} pattern
  */
 export function compileRegex(pattern) {
   const m = /^\/(.+)\/([a-z]*)$/s.exec(pattern);
   return m ? new RegExp(m[1], m[2].replace(/[gy]/g, '')) : new RegExp(pattern);
 }
 
-function normalizeRule(raw, listName, index, errors) {
-  if (typeof raw === 'string') raw = { pattern: raw };
-  if (!raw || typeof raw !== 'object') {
+/**
+ * @param {unknown} input
+ * @param {string} listName
+ * @param {number} index
+ * @param {ConfigError[]} errors
+ * @returns {Rule | null}
+ */
+function normalizeRule(input, listName, index, errors) {
+  const value = typeof input === 'string' ? { pattern: input } : input;
+  if (!value || typeof value !== 'object') {
     errors.push({ list: listName, index, code: 'invalid' });
     return null;
   }
+  const raw = /** @type {UntrustedObject} */ (value);
   const rule = createRule({
     pattern: String(raw.pattern ?? '').trim(),
     type: pickEnum(raw.type, RULE_TYPES, 'glob'),
@@ -187,19 +229,34 @@ function normalizeRule(raw, listName, index, errors) {
   return rule;
 }
 
+/**
+ * @param {unknown} raw
+ * @param {string} listName
+ * @param {ConfigError[]} errors
+ * @returns {Rule[]}
+ */
 function normalizeRules(raw, listName, errors) {
   if (!Array.isArray(raw)) return [];
-  return raw.map((r, i) => normalizeRule(r, listName, i, errors)).filter(Boolean);
+  /** @type {Rule[]} */
+  const rules = [];
+  raw.forEach((r, i) => {
+    const rule = normalizeRule(r, listName, i, errors);
+    if (rule) rules.push(rule);
+  });
+  return rules;
 }
 
 /**
  * Coerces any object (storage contents, imported JSON) into a valid config.
  * Unknown keys are dropped, invalid values fall back to defaults and invalid rules are
  * reported in `errors` and removed.
- * @returns {{ config: Config, errors: Array<{list:string,index:number,code:string,pattern?:string}> }}
+ * @param {unknown} raw
+ * @returns {{ config: Config, errors: ConfigError[] }}
  */
 export function normalizeConfig(raw) {
-  const src = raw ?? {}; // a non-object input carries none of the keys, so every field falls back
+  // A non-object input carries none of the keys, so every field falls back.
+  const src = /** @type {UntrustedObject} */ (raw ?? {});
+  /** @type {ConfigError[]} */
   const errors = [];
   const d = DEFAULT_CONFIG;
   const config = {
@@ -236,13 +293,18 @@ export function normalizeConfig(raw) {
   return { config, errors };
 }
 
-/** Query options that apply to a URL: global settings overridden by the matched rule. */
+/**
+ * Query options that apply to a URL: global settings overridden by the matched rule.
+ * @param {Config} config
+ * @param {Rule | null | undefined} rule
+ * @returns {QueryOptions}
+ */
 export function effectiveQuery(config, rule) {
-  const q = rule?.query || {};
+  const q = rule?.query;
   return {
-    compare: q.compare ?? config.query.compare,
+    compare: q?.compare ?? config.query.compare,
     orderMatters: config.query.orderMatters,
-    ignored: q.ignored ?? config.query.ignored,
-    significant: q.significant ?? config.query.significant,
+    ignored: q?.ignored ?? config.query.ignored,
+    significant: q?.significant ?? config.query.significant,
   };
 }

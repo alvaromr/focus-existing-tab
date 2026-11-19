@@ -12,10 +12,11 @@ const all = (root, selector) => /** @type {HTMLElement[]} */ ([...root.querySele
  * @param {ParentNode} [root]
  */
 export function applyI18n(root = document) {
-  for (const el of all(root, '[data-i18n]')) el.textContent = t(el.dataset.i18n);
+  // Each selector only matches elements that carry the attribute it reads.
+  for (const el of all(root, '[data-i18n]')) el.textContent = t(/** @type {string} */ (el.dataset.i18n));
   for (const el of all(root, '[data-i18n-placeholder]')) {
-    /** @type {HTMLInputElement} */ (el).placeholder = t(el.dataset.i18nPlaceholder);
+    /** @type {HTMLInputElement} */ (el).placeholder = t(/** @type {string} */ (el.dataset.i18nPlaceholder));
   }
-  for (const el of all(root, '[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
+  for (const el of all(root, '[data-i18n-title]')) el.title = t(/** @type {string} */ (el.dataset.i18nTitle));
   if (root === document) document.title = t(document.documentElement.dataset.i18nTitle || 'extName');
 }

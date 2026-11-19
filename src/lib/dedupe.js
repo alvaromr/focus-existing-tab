@@ -1,25 +1,47 @@
 import { analyzeUrl, keyFor } from './matching.js';
 import { matchesAnyGlob } from './glob.js';
 
+/** @typedef {import('./config.js').Config} Config */
+/** @typedef {import('./config.js').Rule} Rule */
+/**
+ * The fields of `chrome.tabs.Tab` the core reads.
+ * @typedef {{ id?: number, windowId: number, groupId?: number, url?: string, pendingUrl?: string,
+ *   active?: boolean, pinned?: boolean, discarded?: boolean, incognito?: boolean }} Tab
+ */
+/** The fields of `chrome.tabGroups.TabGroup` the core reads. @typedef {{ id: number, title?: string }} TabGroup */
+/** The tab the ranking is relative to. @typedef {{ windowId?: number, groupId?: number }} Reference */
+
+/** @param {Tab} tab */
 function tabUrl(tab) {
   return tab.url || tab.pendingUrl;
 }
 
-/** Whether this tab may be closed by the extension. */
+/**
+ * Whether this tab may be closed by the extension.
+ * @param {Config} config
+ * @param {Tab} tab
+ */
 export function canCloseTab(config, tab) {
   return !(tab.pinned && config.pinnedPolicy !== 'normal');
 }
 
+/** @param {Config} config @param {Tab} tab */
 function isConsidered(config, tab) {
   return !(tab.pinned && config.pinnedPolicy === 'ignore');
 }
 
 // Chrome reports -1 (TAB_GROUP_ID_NONE) for ungrouped tabs; treat "no group" as a group of its own.
+/** @param {Tab} tab */
 function groupOf(tab) {
   return tab.groupId ?? -1;
 }
 
-/** Ids of the tab groups (from `chrome.tabGroups.query`) whose title matches `config.excludedGroups`. */
+/**
+ * Ids of the tab groups (from `chrome.tabGroups.query`) whose title matches `config.excludedGroups`.
+ * @param {Config} config
+ * @param {TabGroup[]} groups
+ * @returns {Set<number>}
+ */
 export function excludedGroupIds(config, groups) {
   // Stryker disable next-line StringLiteral: any non-title stand-in is equivalent; '' only keeps a pattern like "undefined" from matching an untitled group.
   return new Set(groups.filter((g) => matchesAnyGlob(config.excludedGroups, g.title ?? '', 'iu')).map((g) => g.id));
@@ -27,11 +49,13 @@ export function excludedGroupIds(config, groups) {
 
 // Excluded tabs are never duplicates and never block others: those in an excluded group, or any
 // grouped tab under groupPolicy 'exclude'.
+/** @param {Config} config @param {Tab} tab @param {Set<number>} excludedIds */
 function isExcluded(config, tab, excludedIds) {
   const group = groupOf(tab);
   return excludedIds.has(group) || (config.groupPolicy === 'exclude' && group !== -1);
 }
 
+/** @type {Record<string, (tab: Tab, ref: Reference) => boolean>} */
 const CRITERIA = {
   // Deduplicate-all has no reference group (undefined), which no tab's group equals.
   group: (tab, ref) => groupOf(tab) === ref.groupId,
@@ -42,6 +66,7 @@ const CRITERIA = {
 };
 
 // Score by the configured criteria in order: the first criterion outweighs all later ones.
+/** @param {Tab} tab @param {Reference} ref @param {Config} config */
 function rank(tab, ref, config) {
   return config.ranking.reduce(
     (score, name, i) => score + (CRITERIA[name](tab, ref) ? 2 ** (config.ranking.length - i) : 0),
@@ -49,7 +74,12 @@ function rank(tab, ref, config) {
   );
 }
 
-/** The tab to keep / focus among equals. `ref` = { windowId, groupId? } of the reference tab. */
+/**
+ * The tab to keep / focus among equals, which all have an id.
+ * @param {Tab[]} tabs
+ * @param {Reference} ref
+ * @param {Config} config
+ */
 function best(tabs, ref, config) {
   const newest = config.tieBreak === 'newest';
   return tabs.reduce((a, b) => {
@@ -58,7 +88,7 @@ function best(tabs, ref, config) {
     if (ra > rb) return a;
     if (ra < rb) return b;
     // Stryker disable next-line EqualityOperator: tab ids are unique, so < and <= never differ.
-    return a.id < b.id !== newest ? a : b;
+    return /** @type {number} */ (a.id) < /** @type {number} */ (b.id) !== newest ? a : b;
   });
 }
 
@@ -66,7 +96,13 @@ function best(tabs, ref, config) {
  * Finds an already open tab showing the same page as `url` (the page `tab` is navigating to).
  * Tabs in `excludedIds` (group ids, see `excludedGroupIds`) neither count as duplicates nor are
  * matched against.
- * @returns {object|null} the tab to focus, or null.
+ * @param {Config} config
+ * @param {Tab[]} tabs
+ * @param {Tab} tab
+ * @param {string} url
+ * @param {Rule | null} rule
+ * @param {Set<number>} [excludedIds]
+ * @returns {Tab | null} the tab to focus, or null.
  */
 export function findExistingTab(config, tabs, tab, url, rule, excludedIds = new Set()) {
   if (isExcluded(config, tab, excludedIds)) return null;
@@ -90,9 +126,14 @@ export function findExistingTab(config, tabs, tab, url, rule, excludedIds = new 
 /**
  * Groups every open tab by key and picks which ones to close so that one tab per page remains.
  * Tabs in `excludedIds` (group ids, see `excludedGroupIds`) are left out entirely.
- * @returns {{ close: number[], keep: Array<{key:string, tab:object, duplicates:object[]}> }}
+ * @param {Config} config
+ * @param {Tab[]} tabs
+ * @param {number | undefined} activeWindowId
+ * @param {Set<number>} [excludedIds]
+ * @returns {{ close: number[], keep: Array<{ key: string, tab: Tab, duplicates: Tab[] }> }}
  */
 export function planDedupeAll(config, tabs, activeWindowId, excludedIds = new Set()) {
+  /** @type {Map<string, Tab[]>} */
   const groups = new Map();
   for (const t of tabs) {
     if (t.id == null || !isConsidered(config, t) || isExcluded(config, t, excludedIds)) continue;
@@ -105,16 +146,18 @@ export function planDedupeAll(config, tabs, activeWindowId, excludedIds = new Se
       config.groupPolicy === 'same' && groupOf(t),
       key,
     ]);
-    if (!groups.has(groupKey)) groups.set(groupKey, []);
-    groups.get(groupKey).push(t);
+    const group = groups.get(groupKey) ?? [];
+    group.push(t);
+    groups.set(groupKey, group);
   }
+  /** @type {number[]} */
   const close = [];
   const keep = [];
   for (const [key, group] of groups) {
     if (group.length < 2) continue;
     const winner = best(group, { windowId: activeWindowId }, config);
     const duplicates = group.filter((t) => t !== winner && canCloseTab(config, t));
-    close.push(...duplicates.map((t) => t.id));
+    close.push(...duplicates.map((t) => /** @type {number} */ (t.id)));
     keep.push({ key, tab: winner, duplicates });
   }
   return { close, keep };

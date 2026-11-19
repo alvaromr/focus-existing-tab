@@ -2,37 +2,49 @@ import { DEFAULT_CONFIG, RANK_CRITERIA, createRule, normalizeConfig, parseList }
 import { analyzeUrl } from '../src/lib/matching.js';
 import { loadConfig, saveConfig } from '../src/chrome/storage.js';
 import { applyI18n, t } from '../src/chrome/i18n.js';
+import { byId, one } from '../src/ui/dom.js';
 
-const $ = (id) => document.getElementById(id);
-/** @param {ParentNode} root @param {string} selector @returns {HTMLInputElement} */
-const input = (root, selector) => /** @type {HTMLInputElement} */ (root.querySelector(selector));
-const field = (name) => input(document, `[name="${name}"]`);
-const rowTemplate = /** @type {HTMLTemplateElement} */ ($('ruleRow'));
-const tbody = (list) => document.querySelector(`table[data-list="${list}"] tbody`);
+/** @typedef {import('../src/lib/config.js').Config} Config */
+/** @typedef {import('../src/lib/config.js').Rule} Rule */
+/** @typedef {import('../src/lib/config.js').ConfigError} ConfigError */
+/** @typedef {import('../src/lib/config.js').UntrustedObject} UntrustedObject */
+/** @typedef {'whitelist' | 'blacklist'} ListName */
+
+/** @type {ListName[]} */
+const LISTS = ['whitelist', 'blacklist'];
+
+/** @param {string} name */
+const field = (name) => one(document, `[name="${name}"]`);
+const rowTemplate = /** @type {HTMLTemplateElement} */ (byId('ruleRow'));
+/** @param {string} list */
+const tbody = (list) => one(document, `table[data-list="${list}"] tbody`);
 
 // ---------- form <-> config ----------
 
+/** @param {string} name @param {unknown} value */
 function setField(name, value) {
   const el = field(name);
-  if (el.type === 'checkbox') el.checked = value;
-  else el.value = value;
+  if (el.type === 'checkbox') el.checked = /** @type {boolean} */ (value);
+  else el.value = /** @type {string} */ (value);
 }
 
+/** @param {string} name */
 function getField(name) {
   const el = field(name);
   return el.type === 'checkbox' ? el.checked : el.value;
 }
 
+/** @param {string} list @param {Rule} [rule] */
 function addRuleRow(list, rule = createRule()) {
-  const row = /** @type {HTMLTableRowElement} */ (rowTemplate.content.firstElementChild.cloneNode(true));
+  const row = /** @type {HTMLTableRowElement} */ (one(rowTemplate.content, 'tr').cloneNode(true));
   applyI18n(row);
-  input(row, '.r-enabled').checked = rule.enabled;
-  input(row, '.r-pattern').value = rule.pattern;
-  input(row, '.r-type').value = rule.type;
-  input(row, '.r-compare').value = rule.query.compare == null ? '' : rule.query.compare ? 'yes' : 'no';
-  input(row, '.r-ignored').value = rule.query.ignored?.join(', ') ?? '';
-  input(row, '.r-significant').value = rule.query.significant?.join(', ') ?? '';
-  input(row, '.r-delete').addEventListener('click', () => {
+  one(row, '.r-enabled').checked = rule.enabled;
+  one(row, '.r-pattern').value = rule.pattern;
+  one(row, '.r-type').value = rule.type;
+  one(row, '.r-compare').value = rule.query.compare == null ? '' : rule.query.compare ? 'yes' : 'no';
+  one(row, '.r-ignored').value = rule.query.ignored?.join(', ') ?? '';
+  one(row, '.r-significant').value = rule.query.significant?.join(', ') ?? '';
+  one(row, '.r-delete').addEventListener('click', () => {
     row.remove();
     markDirty();
   });
@@ -40,15 +52,16 @@ function addRuleRow(list, rule = createRule()) {
   return row;
 }
 
+/** @param {ListName} list */
 function readRules(list) {
   return [...tbody(list).children].map((row) => {
-    const compare = input(row, '.r-compare').value;
-    const ignored = input(row, '.r-ignored').value.trim();
-    const significant = input(row, '.r-significant').value.trim();
+    const compare = one(row, '.r-compare').value;
+    const ignored = one(row, '.r-ignored').value.trim();
+    const significant = one(row, '.r-significant').value.trim();
     return {
-      enabled: input(row, '.r-enabled').checked,
-      pattern: input(row, '.r-pattern').value,
-      type: input(row, '.r-type').value,
+      enabled: one(row, '.r-enabled').checked,
+      pattern: one(row, '.r-pattern').value,
+      type: one(row, '.r-type').value,
       query: {
         compare: compare === '' ? null : compare === 'yes',
         ignored: ignored === '' ? null : parseList(ignored),
@@ -60,9 +73,11 @@ function readRules(list) {
 
 // ---------- ranking list (ordered criteria with include/exclude) ----------
 
-const rankingList = $('ranking');
+const rankingList = byId('ranking');
+/** @param {string} name */
 const rankLabelKey = (name) => `rank${name[0].toUpperCase()}${name.slice(1)}`;
 
+/** @param {string[]} ranking */
 function fillRanking(ranking) {
   const order = [...ranking, ...RANK_CRITERIA.filter((c) => !ranking.includes(c))];
   rankingList.replaceChildren(
@@ -100,7 +115,7 @@ function fillRanking(ranking) {
 
 function readRanking() {
   const items = /** @type {HTMLLIElement[]} */ ([...rankingList.children]);
-  return items.filter((li) => input(li, 'input').checked).map((li) => li.dataset.name);
+  return items.filter((li) => one(li, 'input').checked).map((li) => li.dataset.name);
 }
 
 // Scalar settings map 1:1 to a form control named after their config path ("scope",
@@ -115,31 +130,38 @@ const SCALAR_FIELDS = [
   'query.orderMatters',
 ].filter((name) => name !== 'mode');
 
+/** @param {UntrustedObject} obj @param {string} path @returns {unknown} */
 const getPath = (obj, path) => path.split('.').reduce((o, k) => o?.[k], obj);
+/** @param {UntrustedObject} obj @param {string} path @param {unknown} value */
 const setPath = (obj, path, value) => {
   const keys = path.split('.');
-  const last = keys.pop();
+  const last = /** @type {string} */ (keys.pop());
   keys.reduce((o, k) => (o[k] ??= {}), obj)[last] = value;
 };
 
+/** @param {Config} config */
 function fillForm(config) {
   for (const name of SCALAR_FIELDS) setField(name, getPath(config, name));
-  input(document, `[name="mode"][value="${config.mode}"]`).checked = true;
+  one(document, `[name="mode"][value="${config.mode}"]`).checked = true;
   fillRanking(config.ranking);
   setField('excludedGroups', config.excludedGroups.join('\n'));
   setField('query.ignored', config.query.ignored.join('\n'));
   setField('query.significant', config.query.significant.join('\n'));
-  for (const list of ['whitelist', 'blacklist']) {
+  for (const list of LISTS) {
     tbody(list).replaceChildren();
     for (const rule of config[list]) addRuleRow(list, rule);
   }
 }
 
-/** Raw (unvalidated) config as currently shown in the form. */
+/**
+ * Raw (unvalidated) config as currently shown in the form.
+ * @returns {UntrustedObject}
+ */
 function readForm() {
+  /** @type {UntrustedObject} */
   const raw = {};
   for (const name of SCALAR_FIELDS) setPath(raw, name, getField(name));
-  raw.mode = input(document, '[name="mode"]:checked')?.value;
+  raw.mode = /** @type {HTMLInputElement | null} */ (document.querySelector('[name="mode"]:checked'))?.value;
   raw.ranking = readRanking();
   raw.excludedGroups = parseList(getField('excludedGroups'));
   raw.query.ignored = parseList(getField('query.ignored'));
@@ -151,20 +173,22 @@ function readForm() {
 
 // ---------- validation & status ----------
 
+/** @param {ConfigError} e */
 function describeError(e) {
   const where = `${t(e.list === 'whitelist' ? 'secWhitelist' : 'secBlacklist')} #${e.index + 1}`;
-  if (e.code === 'regex') return `${where}: ${t('errRegex', [e.pattern])}`;
+  if (e.code === 'regex') return `${where}: ${t('errRegex', [String(e.pattern)])}`;
   if (e.code === 'empty') return `${where}: ${t('errEmptyPattern')}`;
   return `${where}: ${t('errInvalidRule')}`;
 }
 
+/** @param {ConfigError[]} errors */
 function showErrors(errors) {
-  const ul = $('errors');
+  const ul = byId('errors');
   ul.replaceChildren(
     ...errors.map((e) => Object.assign(document.createElement('li'), { textContent: describeError(e) })),
   );
   ul.hidden = errors.length === 0;
-  for (const list of ['whitelist', 'blacklist']) {
+  for (const list of LISTS) {
     [...tbody(list).children].forEach((row, i) => {
       row.classList.toggle(
         'invalid',
@@ -174,8 +198,9 @@ function showErrors(errors) {
   }
 }
 
+/** @param {string} text @param {string} [kind] */
 function setStatus(text, kind = '') {
-  const el = $('status');
+  const el = byId('status');
   el.textContent = text;
   el.className = `muted ${kind}`;
 }
@@ -192,8 +217,12 @@ function validate() {
   return errors.length ? null : config;
 }
 
+/** @param {unknown} error */
+const messageOf = (error) => String(error instanceof Error ? error.message : error);
+
 // ---------- URL tester ----------
 
+/** @type {Record<string, string>} */
 const REASONS = {
   disabled: 'reasonDisabled',
   internal: 'reasonInternal',
@@ -203,17 +232,17 @@ const REASONS = {
 };
 
 function runTest() {
-  const url = input(document, '#testUrl').value.trim();
-  const result = $('testResult');
+  const url = one(document, '#testUrl').value.trim();
+  const result = byId('testResult');
   if (!url) {
     result.hidden = true;
     return;
   }
   const { config } = normalizeConfig(readForm());
   const a = analyzeUrl(config, url);
-  $('testDecision').textContent = t(REASONS[a.reason]);
-  $('testRule').textContent = a.rule ? `${a.rule.pattern} (${a.rule.type})` : t('testNoRule');
-  $('testKey').firstElementChild.textContent = a.key ?? '—';
+  byId('testDecision').textContent = t(REASONS[a.reason]);
+  byId('testRule').textContent = a.rule ? `${a.rule.pattern} (${a.rule.type})` : t('testNoRule');
+  one(byId('testKey'), 'code').textContent = a.key ?? '—';
   result.hidden = false;
 }
 
@@ -230,7 +259,7 @@ async function save() {
     fillForm(config);
     setStatus(t('statusSaved'), 'status-ok');
   } catch (e) {
-    setStatus(t('statusSaveError', [String(e?.message || e)]), 'status-error');
+    setStatus(t('statusSaveError', [messageOf(e)]), 'status-error');
   }
 }
 
@@ -247,6 +276,7 @@ function exportConfig() {
 
 const MAX_IMPORT_BYTES = 1024 * 1024;
 
+/** @param {File} file */
 async function importConfig(file) {
   try {
     if (file.size > MAX_IMPORT_BYTES) throw new Error(t('importTooLarge'));
@@ -257,7 +287,7 @@ async function importConfig(file) {
     setStatus(t('importLoaded') + dropped);
     runTest();
   } catch (e) {
-    setStatus(t('importError', [String(e?.message || e)]), 'status-error');
+    setStatus(t('importError', [messageOf(e)]), 'status-error');
   }
 }
 
@@ -267,7 +297,7 @@ async function importConfig(file) {
 // and click/Enter toggles the same text inline (keyboard and touch friendly).
 function attachHelp() {
   for (const el of /** @type {HTMLElement[]} */ ([...document.querySelectorAll('[data-help]')])) {
-    const text = t(el.dataset.help);
+    const text = t(/** @type {string} */ (el.dataset.help)); // the selector guarantees it
     const btn = Object.assign(document.createElement('button'), {
       type: 'button',
       className: 'help',
@@ -287,7 +317,7 @@ function attachHelp() {
       btn.setAttribute('aria-expanded', String(!note.hidden));
     });
     // Button next to the title text; note below the row (or below the whole table for headers).
-    const anchor = el.querySelector('legend') || (el.matches('.grid2 label') ? el.querySelector('span') : el);
+    const anchor = el.querySelector('legend') || (el.matches('.grid2 label') ? one(el, 'span') : el);
     anchor.append(' ', btn);
     (el.closest('table') || el).after(note);
   }
@@ -303,31 +333,35 @@ loadConfig().then((config) => {
   setStatus('');
 });
 
+/** @param {Event} e */
 const onEdit = (e) => {
-  if (e.target.id !== 'testUrl' && e.target.id !== 'importFile') markDirty();
+  const id = /** @type {HTMLElement} */ (e.target).id;
+  if (id !== 'testUrl' && id !== 'importFile') markDirty();
 };
-document.querySelector('main').addEventListener('input', onEdit);
-document.querySelector('main').addEventListener('change', onEdit);
+const main = one(document, 'main');
+main.addEventListener('input', onEdit);
+main.addEventListener('change', onEdit);
 for (const btn of /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll('button.add')])) {
   btn.addEventListener('click', () => {
-    input(addRuleRow(btn.dataset.list), '.r-pattern').focus();
+    one(addRuleRow(/** @type {string} */ (btn.dataset.list)), '.r-pattern').focus();
     markDirty();
   });
 }
-const importFile = input(document, '#importFile');
-$('save').addEventListener('click', save);
-$('export').addEventListener('click', exportConfig);
-$('import').addEventListener('click', () => importFile.click());
+const importFile = one(document, '#importFile');
+byId('save').addEventListener('click', save);
+byId('export').addEventListener('click', exportConfig);
+byId('import').addEventListener('click', () => importFile.click());
 importFile.addEventListener('change', () => {
-  if (importFile.files[0]) importConfig(importFile.files[0]);
+  const file = importFile.files?.[0];
+  if (file) importConfig(file);
   importFile.value = '';
 });
-$('reset').addEventListener('click', () => {
+byId('reset').addEventListener('click', () => {
   fillForm(normalizeConfig(DEFAULT_CONFIG).config);
   showErrors([]);
   setStatus(t('statusResetPending'));
 });
-$('testUrl').addEventListener('input', runTest);
+byId('testUrl').addEventListener('input', runTest);
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === 's') {
     e.preventDefault();

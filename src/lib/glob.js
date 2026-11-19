@@ -1,6 +1,8 @@
 // Minimal glob: `*` matches any run of characters (including `/`), `?` matches one.
+/** @type {Map<string, RegExp>} */
 const cache = new Map();
 
+/** @param {string} glob */
 export function globToRegExpSource(glob) {
   return glob
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -8,6 +10,7 @@ export function globToRegExpSource(glob) {
     .replace(/\?/g, '.');
 }
 
+/** @param {string} glob @param {string} flags */
 function globToRegExp(glob, flags) {
   const key = `${flags}:${glob}`;
   let re = cache.get(key);
@@ -20,10 +23,12 @@ function globToRegExp(glob, flags) {
   return re;
 }
 
+/** @param {string} glob @param {string} value @param {string} flags */
 function globMatches(glob, value, flags) {
   return globToRegExp(glob, flags).test(value);
 }
 
+/** @param {readonly string[]} globs @param {string} value @param {string} [flags] */
 export function matchesAnyGlob(globs, value, flags = '') {
   return globs.some((g) => globMatches(g, value, flags));
 }

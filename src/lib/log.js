@@ -3,6 +3,8 @@
 const PREFIX = '[Focus Existing Tab]';
 
 export const log = {
+  /** @param {string} context what the extension was doing @param {unknown} cause */
   warn: (context, cause) => console.warn(PREFIX, `${context}:`, cause),
+  /** @param {string} context what the extension was doing @param {unknown} cause */
   error: (context, cause) => console.error(PREFIX, `${context}:`, cause),
 };

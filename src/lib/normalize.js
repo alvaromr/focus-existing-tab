@@ -12,14 +12,19 @@ const BLANK_URLS = new Set([
   'brave://newtab/',
 ]);
 
+/** @param {string | undefined} url */
 export function isBlankUrl(url) {
   return BLANK_URLS.has(url || '');
 }
 
+/**
+ * @param {string | null | undefined} url
+ * @returns {URL | null}
+ */
 // Stryker disable BlockStatement: an empty catch returns undefined, as falsy as null for every caller.
 export function parseUrl(url) {
   try {
-    return new URL(url);
+    return new URL(/** @type {string} */ (url));
   } catch {
     return null;
   }
@@ -28,11 +33,24 @@ export function parseUrl(url) {
 
 // Only regular web pages are deduplicated. Everything else (chrome://, about:,
 // chrome-extension://, file://, data:, view-source:, devtools://…) is internal.
-export function isEligibleUrl(url) {
+/**
+ * @param {string | URL | null | undefined} url
+ * @returns {URL | null} the parsed URL when it is an http(s) page, else null
+ */
+function toEligibleUrl(url) {
   const u = url instanceof URL ? url : parseUrl(url);
-  return !!u && (u.protocol === 'http:' || u.protocol === 'https:');
+  return u && (u.protocol === 'http:' || u.protocol === 'https:') ? u : null;
 }
 
+/** @param {string | URL | null | undefined} url */
+export function isEligibleUrl(url) {
+  return toEligibleUrl(url) !== null;
+}
+
+/**
+ * @param {[string, string][]} entries
+ * @param {import('./config.js').QueryOptions} query
+ */
 function filterParams(entries, query) {
   return entries.filter(([name]) => {
     if (matchesAnyGlob(query.significant, name)) return true;
@@ -42,6 +60,7 @@ function filterParams(entries, query) {
 }
 
 // By name, then by value.
+/** @param {[string, string]} a @param {[string, string]} b */
 function compareEntries([ka, va], [kb, vb]) {
   if (ka < kb) return -1;
   if (ka > kb) return 1;
@@ -54,14 +73,14 @@ function compareEntries([ka, va], [kb, vb]) {
 /**
  * Builds the comparison key of a URL. Two URLs are duplicates when their keys are equal.
  * Returns null for non-eligible URLs.
- * @param {string|URL} url
+ * @param {string | URL | null | undefined} url
  * @param {import('./config.js').Normalization} normalization
  * @param {import('./config.js').QueryOptions} query
  * @returns {string|null}
  */
 export function normalizeUrl(url, normalization, query) {
-  const u = url instanceof URL ? url : parseUrl(url);
-  if (!isEligibleUrl(u)) return null;
+  const u = toEligibleUrl(url);
+  if (!u) return null;
 
   const scheme = normalization.ignoreScheme ? 'http:' : u.protocol;
   let host = normalization.caseInsensitiveHost ? u.hostname.toLowerCase() : u.hostname;

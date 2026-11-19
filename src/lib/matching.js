@@ -2,6 +2,12 @@ import { globToRegExpSource } from './glob.js';
 import { compileRegex, effectiveQuery } from './config.js';
 import { isEligibleUrl, normalizeUrl, parseUrl } from './normalize.js';
 
+/** @typedef {import('./config.js').Config} Config */
+/** @typedef {import('./config.js').Rule} Rule */
+/** @typedef {(u: URL) => string} Subject the part of a URL a pattern is compared against */
+/** @typedef {{ act: boolean, reason: string, rule: Rule | null }} Decision */
+
+/** @type {Map<string, { re: RegExp, subject: Subject }>} */
 const cache = new Map();
 
 /**
@@ -13,6 +19,7 @@ const cache = new Map();
  *  - with `/`: a URL rule, anchored. Matched against `host/path?query` (scheme stripped)
  *    unless the pattern itself contains `://`.
  * Regex rules are tested against the full URL (`/body/flags` or bare body).
+ * @param {Rule} rule
  */
 function compileRule(rule) {
   const key = `${rule.type}:${rule.pattern}`;
@@ -38,7 +45,10 @@ function compileRule(rule) {
   return compiled;
 }
 
-/** The part of a URL each kind of pattern is compared against. */
+/**
+ * The part of a URL each kind of pattern is compared against.
+ * @type {Record<'host' | 'hostport' | 'schemeless' | 'href', Subject>}
+ */
 const SUBJECTS = {
   host: (u) => u.hostname.toLowerCase(),
   hostport: (u) => u.host.toLowerCase(),
@@ -46,6 +56,7 @@ const SUBJECTS = {
   href: (u) => u.href,
 };
 
+/** @param {Rule} rule @param {string | URL | null | undefined} url */
 export function ruleMatches(rule, url) {
   const u = url instanceof URL ? url : parseUrl(url);
   if (!u) return false;
@@ -54,6 +65,7 @@ export function ruleMatches(rule, url) {
   return re.test(subject(u));
 }
 
+/** @param {Rule[]} rules @param {string | URL | null | undefined} url */
 export function findMatchingRule(rules, url) {
   const u = url instanceof URL ? url : parseUrl(url);
   return rules.find((r) => r.enabled !== false && ruleMatches(r, u)) || null;
@@ -64,7 +76,9 @@ export function findMatchingRule(rules, url) {
  * In 'whitelist' mode the URL must match a whitelist rule. In 'blacklist' mode it must not
  * match a blacklist rule; whitelist rules are still consulted only to pick per-rule query
  * overrides.
- * @returns {{ act: boolean, reason: string, rule: import('./config.js').Rule|null }}
+ * @param {Config} config
+ * @param {string | URL | null | undefined} url
+ * @returns {Decision}
  */
 export function resolveDecision(config, url) {
   const u = url instanceof URL ? url : parseUrl(url);
@@ -78,12 +92,22 @@ export function resolveDecision(config, url) {
   return { act: true, reason: 'ok', rule };
 }
 
-/** Comparison key of a URL under the query options resolved for `rule`. */
+/**
+ * Comparison key of a URL under the query options resolved for `rule`.
+ * @param {Config} config
+ * @param {string | URL | null | undefined} url
+ * @param {Rule | null} rule
+ */
 export function keyFor(config, url, rule) {
   return normalizeUrl(url, config.normalization, effectiveQuery(config, rule));
 }
 
-/** Decision plus key for a URL, using its own matched rule. */
+/**
+ * Decision plus key for a URL, using its own matched rule.
+ * @param {Config} config
+ * @param {string | URL | null | undefined} url
+ * @returns {Decision & { key: string | null }}
+ */
 export function analyzeUrl(config, url) {
   const decision = resolveDecision(config, url);
   const key = decision.act ? keyFor(config, url, decision.rule) : null;

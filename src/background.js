@@ -15,17 +15,22 @@ import {
   updateConfig,
 } from './chrome/storage.js';
 
+/** @typedef {import('./lib/config.js').Config} Config */
+
 // Catch handlers. `warnOn`: an expected race (the tab or window went away); the caller goes on
 // with `null`. `errorOn`: anything else.
-const warnOn = (context) => (cause) => {
+/** @param {string} context */
+const warnOn = (context) => (/** @type {unknown} */ cause) => {
   log.warn(context, cause);
   return null;
 };
-const errorOn = (context) => (cause) => log.error(context, cause);
+/** @param {string} context */
+const errorOn = (context) => (/** @type {unknown} */ cause) => log.error(context, cause);
 
 // ---------- configuration ----------
 
-let config = null;
+/** @type {Config} Set before `ready` resolves; every reader awaits `ready` first. */
+let config = /** @type {Config} */ (/** @type {unknown} */ (null));
 const nav = createNavigationTracker();
 // Handlers wait for the configuration and for the tabs already open when the worker started:
 // the tracker treats a tab it does not know as newer than any navigation it handles.
@@ -43,7 +48,8 @@ onStatsChange(() => refreshBadge().catch(errorOn('refreshing the badge')));
 
 // ---------- navigation events ----------
 
-chrome.tabs.onCreated.addListener((tab) => nav.tabCreated(tab));
+// Tabs reported by onCreated always have an id.
+chrome.tabs.onCreated.addListener((tab) => nav.tabCreated({ id: /** @type {number} */ (tab.id), url: tab.url }));
 chrome.tabs.onRemoved.addListener((tabId) => nav.tabRemoved(tabId));
 
 chrome.webNavigation.onBeforeNavigate.addListener(({ frameId, tabId, url, timeStamp }) => {
@@ -69,6 +75,11 @@ chrome.webNavigation.onErrorOccurred.addListener(({ frameId, tabId }) => {
  * Decides and executes what to do with a main-frame navigation of `tabId` to `url`.
  * `stage` is 'before' (onBeforeNavigate) or 'committed' (onCommitted re-check). `start` is when
  * the navigation started (`nav.startOf`, read when its event fired).
+ * @param {number} tabId
+ * @param {string} url
+ * @param {import('./lib/navigation-tracker.js').Stage} stage
+ * @param {import('./lib/navigation-tracker.js').NavigationContext} context
+ * @param {number} start
  */
 async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }, start) {
   await ready;
@@ -84,7 +95,8 @@ async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }, start) {
   if (isReload(config, previous, url)) return;
   const [tabs, excluded] = await Promise.all([queryTabs(), queryExcludedGroups()]);
   // A tab that started navigating after this navigation is its duplicate, not its original.
-  const earlier = tabs.filter((t) => !nav.navigatedAfter(t.id, start));
+  // chrome.tabs.query only omits the id for tabs outside any browser window (devtools).
+  const earlier = tabs.filter((t) => !nav.navigatedAfter(/** @type {number} */ (t.id), start));
   const target = findExistingTab(config, earlier, tab, url, decision.rule, excluded);
   if (!target) return;
 
@@ -108,6 +120,7 @@ async function queryExcludedGroups() {
   return excludedGroupIds(config, await chrome.tabGroups.query({}));
 }
 
+/** @param {number} tabId */
 function goBack(tabId) {
   nav.goBackIssued(tabId);
   chrome.tabs.goBack(tabId).catch((cause) => {
@@ -116,10 +129,12 @@ function goBack(tabId) {
   });
 }
 
+/** @param {import('./lib/dedupe.js').Tab} tab */
 async function focusTab(tab) {
   if (config.focusWindow) {
     const win = await chrome.windows.get(tab.windowId).catch(warnOn('reading the window of the existing tab'));
     if (win) {
+      /** @type {chrome.windows.UpdateInfo} */
       const update = { focused: true };
       if (win.state === 'minimized' && config.restoreMinimized) update.state = 'normal';
       await chrome.windows.update(tab.windowId, update).catch(warnOn('focusing the window of the existing tab'));
@@ -163,6 +178,7 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === 'toggle-enabled') toggleEnabled().catch(errorOn('toggling the extension'));
 });
 
+/** @type {Record<string, () => Promise<unknown>>} */
 const MESSAGE_HANDLERS = {
   dedupeAll,
   toggleEnabled,

@@ -26,7 +26,7 @@ pnpm fix          # ESLint --fix + Prettier --write, then the gate
 pnpm audit        # dependency advisories
 pnpm lint         # ESLint + Prettier --check + ShellCheck (needs `shellcheck` installed)
 pnpm format       # Prettier --write
-pnpm typecheck    # tsc --checkJs against the Chrome API types (via JSDoc)
+pnpm typecheck    # tsc --checkJs in strict mode against the Chrome API types (via JSDoc)
 pnpm test         # unit tests (native node --test runner)
 pnpm coverage     # unit tests with the coverage thresholds (100%)
 pnpm mutation     # Stryker over src/lib (stryker.config.json); report in reports/mutation/
@@ -56,6 +56,7 @@ src/lib/glob.js                  minimal glob matcher
 src/chrome/storage.js            chrome.storage (sync/local)
 src/chrome/i18n.js               chrome.i18n strings for the pages
 src/ui/tokens.css                design tokens shared by the options page and the popup
+src/ui/dom.js                    DOM lookups for the pages; a missing element throws
 options/                         options page
 popup/                           popup
 test/*.test.js                   unit tests

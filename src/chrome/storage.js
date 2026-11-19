@@ -10,16 +10,21 @@ export async function loadConfig() {
   return normalizeConfig(raw).config;
 }
 
+/** @typedef {import('../lib/config.js').Config} Config */
+
+/** @param {Config} config */
 export async function saveConfig(config) {
   await chrome.storage.sync.set({ [CONFIG_KEY]: config });
 }
 
+/** @param {Partial<Config>} patch */
 export async function updateConfig(patch) {
   const config = { ...(await loadConfig()), ...patch };
   await saveConfig(config);
   return config;
 }
 
+/** @param {(config: Config) => void} callback */
 export function onConfigChange(callback) {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync' && changes[CONFIG_KEY]) callback(normalizeConfig(changes[CONFIG_KEY].newValue).config);
@@ -50,6 +55,7 @@ export async function resetStats() {
   return stats;
 }
 
+/** @param {(stats: Stats) => void} callback */
 export function onStatsChange(callback) {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes[STATS_KEY]) callback(toStats(changes[STATS_KEY].newValue));
