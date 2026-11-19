@@ -18,7 +18,7 @@ Plain JavaScript with ES modules (Manifest V3), no build step. The extension has
 ## Commands
 
 ```bash
-pnpm install      # development tooling (ESLint, Prettier, TypeScript, @types/chrome) and git hooks
+pnpm install      # development tooling (ESLint, Prettier, TypeScript, @types/chrome, @types/node) and git hooks
 pnpm check        # the gate: lint + typecheck + guards + coverage, the same as CI and the pre-commit hook
 pnpm guards       # gitleaks over the git history, and the 400-line cap per code file
 pnpm verify       # heavy checks run by the pre-push hook
