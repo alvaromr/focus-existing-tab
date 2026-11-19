@@ -84,8 +84,9 @@ e2e covers them (without a metric) and the type check validates them against `@t
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push and PR: `pnpm install --frozen-lockfile`,
-`pnpm check`, the e2e with Chrome for Testing and `pnpm package`, uploading the zip as an artifact.
+`.github/workflows/ci.yml` runs on every push and PR: `pnpm check` and `pnpm package` (uploading
+the zip as an artifact) on the pinned Node, `pnpm check` again on the oldest Node that `engines`
+accepts, and the e2e in the oldest Chrome that `minimum_chrome_version` accepts and in stable.
 
 ## Git hooks
 

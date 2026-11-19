@@ -17,14 +17,47 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
-        id: chrome
-      - run: pnpm test:e2e
-        env:
-          CHROME: ${{ steps.chrome.outputs.chrome-path }}
-          CHROME_ARGS: --no-sandbox
       - run: pnpm package
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension-zip
           path: dist/*.zip
+
+  # The oldest Node that package.json "engines" accepts, on its latest patch.
+  check-oldest-node:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: node --version
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+
+  # The extension in the oldest Chrome that manifest.json "minimum_chrome_version" accepts, and in
+  # the current stable one.
+  e2e:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        chrome: ['116', stable]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
+        id: chrome
+        with:
+          chrome-version: ${{ matrix.chrome }}
+      - run: pnpm test:e2e
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
+          CHROME_ARGS: --no-sandbox
