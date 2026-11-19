@@ -1,6 +1,6 @@
 // Thin wrapper over chrome.storage. Config lives in `sync` (one `config` item),
 // the counter in `local` (frequent writes, no need to sync).
-import { normalizeConfig } from './config.js';
+import { normalizeConfig } from '../lib/config.js';
 
 export const CONFIG_KEY = 'config';
 export const STATS_KEY = 'stats';

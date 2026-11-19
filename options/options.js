@@ -1,7 +1,7 @@
 import { DEFAULT_CONFIG, RANK_CRITERIA, createRule, normalizeConfig, parseList } from '../src/lib/config.js';
 import { analyzeUrl } from '../src/lib/matching.js';
-import { loadConfig, saveConfig } from '../src/lib/storage.js';
-import { applyI18n, t } from '../src/lib/i18n.js';
+import { loadConfig, saveConfig } from '../src/chrome/storage.js';
+import { applyI18n, t } from '../src/chrome/i18n.js';
 
 const $ = (id) => document.getElementById(id);
 /** @param {ParentNode} root @param {string} selector @returns {HTMLInputElement} */

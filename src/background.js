@@ -13,7 +13,7 @@ import {
   onStatsChange,
   resetStats,
   updateConfig,
-} from './lib/storage.js';
+} from './chrome/storage.js';
 
 // Catch handlers. `warnOn`: an expected race (the tab or window went away); the caller goes on
 // with `null`. `errorOn`: anything else.

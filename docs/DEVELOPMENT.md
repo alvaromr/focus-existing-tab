@@ -46,8 +46,9 @@ src/lib/dedupe.js                choice of the existing tab and the deduplicate-
 src/lib/navigation-action.js     reload rule, action for the navigating tab, what counts as avoided
 src/lib/badge.js                 badge text and colour
 src/lib/log.js                   the one console writer
-src/lib/storage.js               chrome.storage (sync/local)
-src/lib/glob.js, i18n.js
+src/lib/glob.js                  minimal glob matcher
+src/chrome/storage.js            chrome.storage (sync/local)
+src/chrome/i18n.js               chrome.i18n strings for the pages
 options/                         options page
 popup/                           popup
 test/*.test.js                   unit tests
@@ -62,9 +63,8 @@ docs/                            this documentation
 ```
 
 All decision logic lives in `src/lib/*` without touching `chrome.*`, and that is where coverage is
-measured. `background.js`, `storage.js`, `i18n.js`, `options.js` and `popup.js` depend on
-`chrome.*`: the e2e covers them (without a metric) and the type check validates them against
-`@types/chrome`.
+measured. `background.js`, `src/chrome/*`, `options.js` and `popup.js` depend on `chrome.*`: the
+e2e covers them (without a metric) and the type check validates them against `@types/chrome`.
 
 ## Tests
 

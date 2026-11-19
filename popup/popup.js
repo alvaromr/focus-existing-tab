@@ -1,6 +1,6 @@
-import { applyI18n, t } from '../src/lib/i18n.js';
+import { applyI18n, t } from '../src/chrome/i18n.js';
 import { log } from '../src/lib/log.js';
-import { onConfigChange, onStatsChange, updateConfig } from '../src/lib/storage.js';
+import { onConfigChange, onStatsChange, updateConfig } from '../src/chrome/storage.js';
 
 const $ = (id) => document.getElementById(id);
 const enabledBox = /** @type {HTMLInputElement} */ ($('enabled'));
