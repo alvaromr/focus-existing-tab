@@ -5,11 +5,11 @@ import { createNavigationTracker } from '../src/lib/navigation-tracker.js';
 const A = 'https://a.com/';
 const B = 'https://b.com/';
 
+/** A tracker on a fake clock that `advance(ms)` moves forward. */
 function tracker(startTime = 1000) {
   let time = startTime;
   const t = createNavigationTracker({ now: () => time });
-  t.advance = (ms) => (time += ms);
-  return t;
+  return Object.assign(t, { advance: (/** @type {number} */ ms) => (time += ms) });
 }
 
 test('new tab: onBeforeNavigate reports wasNew and a blank previous URL', () => {

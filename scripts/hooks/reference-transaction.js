@@ -25,12 +25,14 @@ if (process.argv[2] === 'prepared') {
   }
 }
 
+/** @param {string} ref */
 function currentOid(ref) {
   try {
     return execFileSync('git', ['rev-parse', '--verify', '--quiet', ref], { encoding: 'utf8' }).trim();
   } catch (error) {
     // `rev-parse --verify --quiet` exits 1, printing nothing, when the ref does not exist yet.
-    if (error.status === 1 && !error.stdout) return null;
+    const { status, stdout } = /** @type {{ status?: number, stdout?: string }} */ (error);
+    if (status === 1 && !stdout) return null;
     throw error;
   }
 }

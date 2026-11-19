@@ -26,7 +26,8 @@ pnpm fix          # ESLint --fix + Prettier --write, then the gate
 pnpm audit        # dependency advisories
 pnpm lint         # ESLint + Prettier --check + ShellCheck (needs `shellcheck` installed)
 pnpm format       # Prettier --write
-pnpm typecheck    # tsc --checkJs in strict mode against the Chrome API types (via JSDoc)
+pnpm typecheck    # tsc --checkJs in strict mode (via JSDoc): the extension against the Chrome API
+                  # types (jsconfig.json), tests and scripts against Node's too (jsconfig.tools.json)
 pnpm test         # unit tests (native node --test runner)
 pnpm coverage     # unit tests with the coverage thresholds (100%)
 pnpm mutation     # Stryker over src/lib (stryker.config.json); report in reports/mutation/

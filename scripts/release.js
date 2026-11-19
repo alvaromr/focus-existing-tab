@@ -9,7 +9,7 @@ import { REPO_DIR } from './lib/cdp.js';
 const arg = process.argv[2];
 if (!arg) throw new Error('usage: pnpm release patch|minor|major|<x.y.z>');
 
-const git = (...args) => execFileSync('git', args, { cwd: REPO_DIR, encoding: 'utf8' }).trim();
+const git = (/** @type {string[]} */ ...args) => execFileSync('git', args, { cwd: REPO_DIR, encoding: 'utf8' }).trim();
 if (git('status', '--porcelain')) throw new Error('working tree is not clean');
 // Bump only once the release can no longer fail: the heavy checks and the packaged-zip smoke.
 execFileSync('pnpm', ['verify'], { cwd: REPO_DIR, stdio: 'inherit' });

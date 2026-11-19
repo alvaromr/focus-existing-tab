@@ -77,7 +77,7 @@ const rankingList = byId('ranking');
 /** @param {string} name */
 const rankLabelKey = (name) => `rank${name[0].toUpperCase()}${name.slice(1)}`;
 
-/** @param {string[]} ranking */
+/** @param {readonly string[]} ranking */
 function fillRanking(ranking) {
   const order = [...ranking, ...RANK_CRITERIA.filter((c) => !ranking.includes(c))];
   rankingList.replaceChildren(

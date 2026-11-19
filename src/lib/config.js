@@ -1,13 +1,15 @@
 /**
- * @typedef {{ compare: boolean|null, ignored: string[]|null, significant: string[]|null }} RuleQuery
+ * The core only reads a config, so its lists are read-only (DEFAULT_CONFIG is frozen).
+ * @typedef {{ compare: boolean|null, ignored: readonly string[]|null, significant: readonly string[]|null }} RuleQuery
  * @typedef {{ pattern: string, type: string, enabled: boolean, query: RuleQuery }} Rule
  * @typedef {{ ignoreFragment: boolean, ignoreWww: boolean, ignoreScheme: boolean, ignoreTrailingSlash: boolean,
  *   ignorePort: boolean, caseInsensitiveHost: boolean, caseInsensitivePath: boolean }} Normalization
- * @typedef {{ compare: boolean, orderMatters: boolean, ignored: string[], significant: string[] }} QueryOptions
- * @typedef {{ version: number, enabled: boolean, mode: string, whitelist: Rule[], blacklist: Rule[],
- *   closeDuplicate: boolean, focusWindow: boolean, inTabNavigation: string, scope: string, pinnedPolicy: string,
- *   groupPolicy: string, excludedGroups: string[], incognitoPolicy: string, windowTypes: string,
- *   ranking: string[], tieBreak: string,
+ * @typedef {{ compare: boolean, orderMatters: boolean, ignored: readonly string[],
+ *   significant: readonly string[] }} QueryOptions
+ * @typedef {{ version: number, enabled: boolean, mode: string, whitelist: readonly Rule[],
+ *   blacklist: readonly Rule[], closeDuplicate: boolean, focusWindow: boolean, inTabNavigation: string,
+ *   scope: string, pinnedPolicy: string, groupPolicy: string, excludedGroups: readonly string[],
+ *   incognitoPolicy: string, windowTypes: string, ranking: readonly string[], tieBreak: string,
  *   restoreMinimized: boolean, actOnReload: boolean, countFocusOnly: boolean, showBadge: boolean,
  *   normalization: Normalization, query: QueryOptions }} Config
  */
@@ -29,6 +31,7 @@ const RULE_TYPES = ['glob', 'regex'];
 // Stryker restore StringLiteral
 export const RANK_CRITERIA = ['group', 'window', 'active', 'pinned', 'loaded'];
 
+/** @type {Readonly<Config>} */
 export const DEFAULT_CONFIG = Object.freeze({
   version: CONFIG_VERSION,
   enabled: true,
@@ -296,7 +299,7 @@ export function normalizeConfig(raw) {
 /**
  * Query options that apply to a URL: global settings overridden by the matched rule.
  * @param {Config} config
- * @param {Rule | null | undefined} rule
+ * @param {{ query?: Partial<RuleQuery> } | null | undefined} rule the matched rule; only its query is read
  * @returns {QueryOptions}
  */
 export function effectiveQuery(config, rule) {

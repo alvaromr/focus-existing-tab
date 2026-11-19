@@ -3,8 +3,12 @@ import assert from 'node:assert/strict';
 import { ruleMatches, findMatchingRule, resolveDecision, analyzeUrl } from '../src/lib/matching.js';
 import { normalizeConfig, createRule } from '../src/lib/config.js';
 
+/** @typedef {import('../src/lib/config.js').Rule} Rule */
+/** @param {string} pattern @param {Partial<Rule>} [extra] */
 const glob = (pattern, extra = {}) => createRule({ pattern, type: 'glob', ...extra });
+/** @param {string} pattern @param {Partial<Rule>} [extra] */
 const regex = (pattern, extra = {}) => createRule({ pattern, type: 'regex', ...extra });
+/** @param {object} [overrides] */
 const cfg = (overrides) => normalizeConfig(overrides).config;
 
 test('host glob matches the host and its subdomains', () => {
@@ -80,7 +84,7 @@ test('whitelist rules provide query overrides even in blacklist mode', () => {
   });
   const a = analyzeUrl(c, 'https://www.youtube.com/watch?v=abc&t=10s&list=x');
   assert.equal(a.act, true);
-  assert.equal(a.rule.pattern, 'youtube.com');
+  assert.equal(a.rule?.pattern, 'youtube.com');
   assert.equal(a.key, 'http://youtube.com/watch?v=abc');
   assert.equal(analyzeUrl(c, 'https://other.com/?a=1').key, 'http://other.com/?a=1');
 });
@@ -148,7 +152,8 @@ test('URL globs see the raw href (encoding, ports, credentials stripped by the p
 });
 
 test('rules without an explicit enabled flag are enabled; URL objects accepted', () => {
-  const r = { pattern: 'a.com', type: 'glob' };
+  // A rule from outside normalizeConfig, without the enabled flag or the query overrides.
+  const r = /** @type {Rule} */ (/** @type {unknown} */ ({ pattern: 'a.com', type: 'glob' }));
   assert.equal(findMatchingRule([r], new URL('https://a.com/')), r);
   assert.equal(resolveDecision(cfg({ blacklist: ['a.com'] }), new URL('https://a.com/')).act, false);
 });

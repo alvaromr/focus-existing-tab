@@ -15,12 +15,16 @@ const CRC_TABLE = new Uint32Array(256).map((_, n) => {
   return c >>> 0;
 });
 
+/** @typedef {[number, number, number, number]} Rgba */
+
+/** @param {Buffer} buf */
 function crc32(buf) {
   let c = 0xffffffff;
   for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
 
+/** @param {string} type @param {Buffer} data */
 function chunk(type, data) {
   const len = Buffer.alloc(4);
   len.writeUInt32BE(data.length);
@@ -30,6 +34,7 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc]);
 }
 
+/** @param {number} size @param {(x: number, y: number) => Rgba} pixelAt */
 function encodePng(size, pixelAt) {
   const raw = Buffer.alloc((size * 4 + 1) * size);
   for (let y = 0; y < size; y++) {
@@ -53,17 +58,27 @@ function encodePng(size, pixelAt) {
 }
 
 // Shapes in unit coordinates (0..1). Later entries are painted on top.
+/** @type {Rgba} */
 const BG = [37, 99, 235, 255];
+/** @type {Rgba} */
 const BACK_TAB = [191, 219, 254, 255];
+/** @type {Rgba} */
 const FRONT_TAB = [255, 255, 255, 255];
+/** @type {Rgba} */
 const FRONT_BAR = [30, 64, 175, 255];
 
+/**
+ * Whether the point (u, v) falls inside the rectangle (x0, y0)-(x1, y1) with corner radius r.
+ * @param {number} u @param {number} v @param {number} x0 @param {number} y0 @param {number} x1
+ * @param {number} y1 @param {number} r
+ */
 function roundedRect(u, v, x0, y0, x1, y1, r) {
   const cx = Math.max(x0 + r, Math.min(u, x1 - r));
   const cy = Math.max(y0 + r, Math.min(v, y1 - r));
   return Math.hypot(u - cx, v - cy) <= r;
 }
 
+/** @param {number} u @param {number} v @returns {Rgba} */
 function colorAt(u, v) {
   if (!roundedRect(u, v, 0, 0, 1, 1, 0.22)) return [0, 0, 0, 0];
   let color = BG;
@@ -74,8 +89,10 @@ function colorAt(u, v) {
   return color;
 }
 
+/** @param {number} size @returns {(x: number, y: number) => Rgba} */
 function supersampled(size) {
   return (x, y) => {
+    /** @type {Rgba} */
     const acc = [0, 0, 0, 0];
     for (let sy = 0; sy < SUPERSAMPLE; sy++) {
       for (let sx = 0; sx < SUPERSAMPLE; sx++) {

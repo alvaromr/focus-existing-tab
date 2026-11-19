@@ -4,31 +4,45 @@ import { createServer } from 'node:http';
 import { launchChromium, sleep } from '../../scripts/lib/cdp.js';
 
 const server = createServer((req, res) => {
+  const url = req.url ?? '/';
   res.setHeader('content-type', 'text/html');
-  if (req.url.startsWith('/redirect')) {
+  if (url.startsWith('/redirect')) {
     res.writeHead(302, { location: '/a' });
     return res.end();
   }
-  res.end(`<title>${req.url}</title><h1>${req.url}</h1>`);
+  res.end(`<title>${url}</title><h1>${url}</h1>`);
 });
-await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const BASE = `http://127.0.0.1:${server.address().port}`;
+await new Promise((r) => server.listen(0, '127.0.0.1', () => r(null)));
+// Listening on a TCP port, the address is an AddressInfo.
+const BASE = `http://127.0.0.1:${/** @type {import('node:net').AddressInfo} */ (server.address()).port}`;
 
 const browser = await launchChromium();
 const { cdp, events, pages, open, attach, evaluate, extId, swSession } = browser;
 
+/** @type {{ name: string, ok: boolean }[]} */
 const results = [];
+/** @param {string} name @param {boolean} ok @param {string} [detail] */
 const check = (name, ok, detail = '') => {
   results.push({ name, ok });
   console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`);
 };
+/** @typedef {(url: string) => boolean} UrlMatch */
 const urls = async () => JSON.stringify((await pages()).map((t) => t.url));
+/** @param {UrlMatch} match */
 const countPages = async (match) => (await pages()).filter((t) => match(t.url)).length;
+/** @param {string} prefix @returns {UrlMatch} */
 const startsWith = (prefix) => (url) => url.startsWith(prefix);
+/** @param {string} expected @returns {UrlMatch} */
 const equals = (expected) => (url) => url === expected;
 
 // Polls `probe` until `done(value)` holds or the timeout passes, and returns the last value.
 // Checks wait for the outcome instead of sleeping a fixed time, which races a slow machine.
+/**
+ * @template T
+ * @param {() => Promise<T>} probe
+ * @param {(value: T) => boolean} done
+ * @returns {Promise<T>}
+ */
 async function waitFor(probe, done, timeout = 10_000) {
   const deadline = Date.now() + timeout;
   for (;;) {
@@ -38,7 +52,9 @@ async function waitFor(probe, done, timeout = 10_000) {
   }
 }
 // While a page is navigating its execution context can vanish; the poll then simply retries.
+/** @param {string} sessionId @param {string} expression */
 const read = (sessionId, expression) => evaluate(sessionId, expression).catch(() => undefined);
+/** @param {string} sessionId */
 const loaded = (sessionId) =>
   waitFor(
     () => read(sessionId, 'document.readyState'),
@@ -131,7 +147,7 @@ try {
 
   // 8. Popup: toggle off, open duplicates (kept), toggle on, dedupe-all closes them.
   const popupSession = await attach(await open(`chrome-extension://${extId}/popup/popup.html`));
-  const counterShown = (text) => /(Duplicates avoided|Duplicados evitados)\s*3\b/.test(text);
+  const counterShown = (/** @type {string} */ text) => /(Duplicates avoided|Duplicados evitados)\s*3\b/.test(text);
   const popupText = await waitFor(() => read(popupSession, 'document.body?.innerText ?? ""'), counterShown);
   check('popup renders localized text and counter', counterShown(popupText), JSON.stringify(popupText));
   await evaluate(popupSession, 'document.getElementById("enabled").click()');
@@ -211,7 +227,11 @@ try {
     'no service worker errors',
     swErrors.length === 0,
     JSON.stringify(
-      swErrors.map((e) => e.params.exceptionDetails?.exception?.description || e.params.args?.map((a) => a.value)),
+      swErrors.map(
+        (e) =>
+          e.params.exceptionDetails?.exception?.description ||
+          e.params.args?.map((/** @type {{ value: unknown }} */ a) => a.value),
+      ),
     ),
   );
 } finally {

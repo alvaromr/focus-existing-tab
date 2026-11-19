@@ -21,8 +21,18 @@ const CANDIDATES = [
   '/usr/bin/brave-browser',
 ];
 
+/**
+ * JSON from the DevTools protocol; its shape depends on the method, and the protocol has no types here.
+ * @typedef {Record<string, any>} CdpResult
+ */
+
+/** @param {unknown} error */
+const messageOf = (error) => (error instanceof Error ? error.message : String(error));
+
+/** @param {number} ms */
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** @param {{ extraArgs?: string[] }} [options] */
 export async function launchChromium({ extraArgs = [] } = {}) {
   const binary = process.env.CHROME || CANDIDATES.find(existsSync);
   if (!binary) throw new Error('No Chromium-based browser found; set CHROME=/path/to/binary');
@@ -39,6 +49,7 @@ export async function launchChromium({ extraArgs = [] } = {}) {
     ...(process.env.CHROME_ARGS?.split(' ').filter(Boolean) ?? []),
     ...extraArgs,
   ]);
+  /** @type {string} */
   const wsUrl = await new Promise((resolve, reject) => {
     let buf = '';
     child.stderr.on('data', (d) => {
@@ -52,16 +63,24 @@ export async function launchChromium({ extraArgs = [] } = {}) {
   const ws = new WebSocket(wsUrl);
   await new Promise((r) => (ws.onopen = r));
   let seq = 0;
+  /** @type {Map<number, { resolve: (result: CdpResult) => void, reject: (error: Error) => void }>} */
   const pending = new Map();
+  /** @type {CdpResult[]} */
   const events = [];
   ws.onmessage = (m) => {
     const msg = JSON.parse(m.data);
-    if (msg.id && pending.has(msg.id)) {
-      const { resolve, reject } = pending.get(msg.id);
+    const call = msg.id && pending.get(msg.id);
+    if (call) {
       pending.delete(msg.id);
-      msg.error ? reject(new Error(JSON.stringify(msg.error))) : resolve(msg.result);
+      msg.error ? call.reject(new Error(JSON.stringify(msg.error))) : call.resolve(msg.result);
     } else events.push(msg);
   };
+  /**
+   * @param {string} method
+   * @param {object} [params]
+   * @param {string} [sessionId]
+   * @returns {Promise<CdpResult>}
+   */
   const cdp = (method, params = {}, sessionId) =>
     new Promise((resolve, reject) => {
       const id = ++seq;
@@ -69,14 +88,18 @@ export async function launchChromium({ extraArgs = [] } = {}) {
       ws.send(JSON.stringify({ id, method, params, sessionId }));
     });
 
+  /** @returns {Promise<{ targetId: string, type: string, url: string }[]>} */
   const targets = async () => (await cdp('Target.getTargets')).targetInfos;
   const pages = async () => (await targets()).filter((t) => t.type === 'page');
+  /** @param {string} url @returns {Promise<string>} the new target's id */
   const open = async (url) => (await cdp('Target.createTarget', { url })).targetId;
+  /** @param {string} targetId @returns {Promise<string>} the session id */
   const attach = async (targetId) => {
     const { sessionId } = await cdp('Target.attachToTarget', { targetId, flatten: true });
     await cdp('Runtime.enable', {}, sessionId);
     return sessionId;
   };
+  /** @param {string} sessionId @param {string} expression @returns {Promise<any>} the value, as JSON from the page */
   const evaluate = async (sessionId, expression) => {
     const r = await cdp('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
     if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || 'evaluate failed');
@@ -94,7 +117,7 @@ export async function launchChromium({ extraArgs = [] } = {}) {
       const name = await evaluate(sessionId, 'chrome.runtime.getManifest().name').catch(() => null);
       if (name === EXT_NAME) return { extId: new URL(w.url).host, swSession: sessionId };
       await cdp('Target.detachFromTarget', { sessionId }).catch((e) =>
-        console.warn(`could not detach from ${w.url}: ${e.message}`),
+        console.warn(`could not detach from ${w.url}: ${messageOf(e)}`),
       );
     }
     return null;
@@ -116,7 +139,7 @@ export async function launchChromium({ extraArgs = [] } = {}) {
       rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
     } catch (e) {
       // A leftover temp profile is harmless; never let it mask the real failure.
-      console.warn(`could not remove ${profile}: ${e.message}`);
+      console.warn(`could not remove ${profile}: ${messageOf(e)}`);
     }
   };
 

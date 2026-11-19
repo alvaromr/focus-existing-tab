@@ -5,7 +5,13 @@ import { DEFAULT_CONFIG } from '../src/lib/config.js';
 
 const N = DEFAULT_CONFIG.normalization;
 const Q = DEFAULT_CONFIG.query;
-const key = (url, n = N, q = Q) => normalizeUrl(url, n, q);
+/**
+ * Settings a test leaves out take their default.
+ * @param {string | URL | null} url
+ * @param {Partial<import('../src/lib/config.js').Normalization>} [n]
+ * @param {Partial<import('../src/lib/config.js').QueryOptions>} [q]
+ */
+const key = (url, n = N, q = Q) => normalizeUrl(url, { ...N, ...n }, { ...Q, ...q });
 
 test('internal URLs are not eligible', () => {
   for (const u of [
@@ -21,8 +27,8 @@ test('internal URLs are not eligible', () => {
     '',
     null,
   ]) {
-    assert.equal(isEligibleUrl(u), false, u);
-    assert.equal(key(u), null, u);
+    assert.equal(isEligibleUrl(u), false, String(u));
+    assert.equal(key(u), null, String(u));
   }
   assert.equal(isEligibleUrl('https://a.com'), true);
   assert.equal(isEligibleUrl('http://a.com'), true);
@@ -40,7 +46,7 @@ test('blank URLs: empty and the new-tab pages of Chromium browsers', () => {
     'edge://newtab/',
     'brave://newtab/',
   ]) {
-    assert.equal(isBlankUrl(url), true, url);
+    assert.equal(isBlankUrl(url), true, String(url));
   }
   assert.equal(isBlankUrl('https://a.com'), false);
   assert.equal(isBlankUrl('chrome://settings/'), false);

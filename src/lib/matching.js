@@ -65,7 +65,7 @@ export function ruleMatches(rule, url) {
   return re.test(subject(u));
 }
 
-/** @param {Rule[]} rules @param {string | URL | null | undefined} url */
+/** @param {readonly Rule[]} rules @param {string | URL | null | undefined} url */
 export function findMatchingRule(rules, url) {
   const u = url instanceof URL ? url : parseUrl(url);
   return rules.find((r) => r.enabled !== false && ruleMatches(r, u)) || null;

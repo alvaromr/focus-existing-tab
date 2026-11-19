@@ -4,12 +4,21 @@ import { readFileSync } from 'node:fs';
 import { badgeOf } from '../src/lib/badge.js';
 import { normalizeConfig } from '../src/lib/config.js';
 
+/** @param {object} [overrides] */
 const cfg = (overrides) => normalizeConfig(overrides).config;
+
+/** @param {RegExp} re @param {string} text @returns {string} the first group; throws when absent */
+const capture = (re, text) => {
+  const m = re.exec(text);
+  if (!m) throw new Error(`${re} not found`);
+  return m[1];
+};
 
 // The light theme's tokens: the first :root block of src/ui/tokens.css (the dark one is nested).
 const css = readFileSync(new URL('../src/ui/tokens.css', import.meta.url), 'utf8');
-const lightRoot = /:root\s*{([^}]*)}/.exec(css)[1];
-const token = (name) => new RegExp(`${name}:\\s*([^;]+);`).exec(lightRoot)[1].trim();
+const lightRoot = capture(/:root\s*{([^}]*)}/, css);
+/** @param {string} name */
+const token = (name) => capture(new RegExp(`${name}:\\s*([^;]+);`), lightRoot).trim();
 
 test('the badge shows the counter, capped at 9999+, and nothing at zero', () => {
   assert.equal(badgeOf(cfg(), 0).text, '');

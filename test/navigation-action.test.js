@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { chooseAction, countsAsAvoided, isReload } from '../src/lib/navigation-action.js';
 import { normalizeConfig } from '../src/lib/config.js';
 
+/** @param {object} [overrides] */
 const cfg = (overrides) => normalizeConfig(overrides).config;
-const plain = { id: 1, pinned: false };
-const pinned = { id: 2, pinned: true };
+const plain = { id: 1, windowId: 1, pinned: false };
+const pinned = { id: 2, windowId: 1, pinned: true };
 
 test('opening the page the tab already shows is a reload, unless actOnReload is on', () => {
   assert.equal(isReload(cfg(), 'https://a.com/', 'https://a.com/'), true);
@@ -29,7 +30,8 @@ test('closing falls back to focusing when closeDuplicate is off or the tab may n
 });
 
 test('every action counts as avoided; focus only counts when countFocusOnly is on', () => {
-  for (const action of ['close', 'back']) assert.equal(countsAsAvoided(cfg({ countFocusOnly: false }), action), true);
+  for (const action of /** @type {const} */ (['close', 'back']))
+    assert.equal(countsAsAvoided(cfg({ countFocusOnly: false }), action), true);
   assert.equal(countsAsAvoided(cfg({ countFocusOnly: true }), 'focus'), true);
   assert.equal(countsAsAvoided(cfg({ countFocusOnly: false }), 'focus'), false);
 });

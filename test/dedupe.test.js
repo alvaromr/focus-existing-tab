@@ -3,8 +3,13 @@ import assert from 'node:assert/strict';
 import { findExistingTab, planDedupeAll, canCloseTab, excludedGroupIds } from '../src/lib/dedupe.js';
 import { normalizeConfig } from '../src/lib/config.js';
 
+/** @param {object} [overrides] */
 const cfg = (overrides) => normalizeConfig(overrides).config;
 let nextId = 1;
+/**
+ * @param {string | undefined} url
+ * @param {Partial<import('../src/lib/dedupe.js').Tab>} [extra]
+ */
 const tab = (url, extra = {}) => ({
   id: nextId++,
   windowId: 1,
@@ -195,7 +200,7 @@ test('planDedupeAll respects whitelist mode and per-rule query overrides', () =>
 });
 
 test('canCloseTab treats a missing pinned flag as not pinned', () => {
-  assert.equal(canCloseTab(cfg(), { id: 1 }), true);
+  assert.equal(canCloseTab(cfg(), { id: 1, windowId: 1 }), true);
 });
 
 // ---- tab groups ----
@@ -327,7 +332,13 @@ test('incognitoPolicy=shared matches across normal and incognito tabs', () => {
 // ---- excluded groups ----
 
 test('excludedGroupIds: the defaults match the titles Claude in Chrome gives its groups', () => {
-  const group = (id, title) => ({ id, title, color: 'grey', collapsed: false, windowId: 1 });
+  const group = (/** @type {number} */ id, /** @type {string | undefined} */ title) => ({
+    id,
+    title,
+    color: 'grey',
+    collapsed: false,
+    windowId: 1,
+  });
   const groups = [
     group(1, 'Claude'),
     group(2, 'Claude (MCP)'),

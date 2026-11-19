@@ -27,6 +27,7 @@ try {
     ])`,
   );
 
+  /** @param {string} name @param {string} path @param {{ dark?: boolean, prepare?: string }} [options] */
   async function shoot(name, path, { dark = false, prepare = '' } = {}) {
     const target = await browser.open(`chrome-extension://${browser.extId}/${path}`);
     const session = await browser.attach(target);
@@ -50,7 +51,7 @@ try {
   }
 
   // The popup is 280px wide: center it on a neutral background for the 1280x800 frame.
-  const centerPopup = (bg) => `
+  const centerPopup = (/** @type {string} */ bg) => `
     document.documentElement.style.background = '${bg}';
     document.body.style.cssText += ';margin:200px auto;box-shadow:0 12px 40px rgba(0,0,0,.35);border-radius:10px;';
     document.getElementById('message').hidden = false;
