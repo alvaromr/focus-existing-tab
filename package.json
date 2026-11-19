@@ -14,7 +14,7 @@
     "fix": "eslint --fix . && prettier --write . && pnpm check",
     "typecheck": "tsc -p jsconfig.json",
     "check": "pnpm lint && pnpm typecheck && pnpm coverage",
-    "verify": "pnpm check && pnpm audit",
+    "verify": "pnpm check && pnpm audit && pnpm test:e2e",
     "audit": "pnpm audit",
     "prepare": "git config core.hooksPath .githooks",
     "icons": "node scripts/make-icons.js",

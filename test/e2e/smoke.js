@@ -23,54 +23,79 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`);
 };
 const urls = async () => JSON.stringify((await pages()).map((t) => t.url));
+const countPages = async (match) => (await pages()).filter((t) => match(t.url)).length;
+const startsWith = (prefix) => (url) => url.startsWith(prefix);
+const equals = (expected) => (url) => url === expected;
+
+// Polls `probe` until `done(value)` holds or the timeout passes, and returns the last value.
+// Checks wait for the outcome instead of sleeping a fixed time, which races a slow machine.
+async function waitFor(probe, done, timeout = 10_000) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const value = await probe();
+    if (done(value) || Date.now() > deadline) return value;
+    await sleep(50);
+  }
+}
+// While a page is navigating its execution context can vanish; the poll then simply retries.
+const read = (sessionId, expression) => evaluate(sessionId, expression).catch(() => undefined);
+const loaded = (sessionId) =>
+  waitFor(
+    () => read(sessionId, 'document.readyState'),
+    (state) => state === 'complete',
+  );
 
 try {
   // 1. New tab with a duplicate URL (tracking param + fragment) is closed.
   const first = await open(`${BASE}/a`);
-  await sleep(800);
+  await loaded(await attach(first));
   await open(`${BASE}/a?utm_source=x#frag`);
-  await sleep(1500);
-  let list = await pages();
-  check('duplicate new tab closed', list.filter((t) => t.url.startsWith(`${BASE}/a`)).length === 1, await urls());
+  const afterDuplicate = await waitFor(
+    () => countPages(startsWith(`${BASE}/a`)),
+    (n) => n === 1,
+  );
+  check('duplicate new tab closed', afterDuplicate === 1, await urls());
   check(
     'original tab kept and active',
-    list.some((t) => t.targetId === first),
+    (await pages()).some((t) => t.targetId === first),
   );
 
   // 2. Different query value is not a duplicate.
-  await open(`${BASE}/a?id=2`);
-  await sleep(1200);
-  list = await pages();
-  check(
-    'different significant param is kept',
-    list.filter((t) => t.url.startsWith(`${BASE}/a`)).length === 2,
-    await urls(),
-  );
+  await loaded(await attach(await open(`${BASE}/a?id=2`)));
+  check('different significant param is kept', (await countPages(startsWith(`${BASE}/a`))) === 2, await urls());
 
   // 3. Redirect to a duplicate URL: caught at onCommitted.
   await open(`${BASE}/redirect`);
-  await sleep(1500);
-  list = await pages();
+  const afterRedirect = await waitFor(
+    async () => (await pages()).map((t) => t.url),
+    (list) => list.filter(equals(`${BASE}/a`)).length === 1 && !list.some((u) => u.includes('redirect')),
+  );
   check(
     'redirected duplicate closed',
-    list.filter((t) => t.url === `${BASE}/a`).length === 1 && !list.some((t) => t.url.includes('redirect')),
-    await urls(),
+    afterRedirect.filter(equals(`${BASE}/a`)).length === 1 && !afterRedirect.some((u) => u.includes('redirect')),
+    JSON.stringify(afterRedirect),
   );
 
   // 4. In-tab navigation to a duplicate: focus existing and go back.
   const b = await open(`${BASE}/b`);
-  await sleep(800);
   const bSession = await attach(b);
+  await loaded(bSession);
   await cdp('Page.navigate', { url: `${BASE}/a` }, bSession);
-  await sleep(2000);
-  list = await pages();
-  const bNow = list.find((t) => t.targetId === b);
-  check('in-tab duplicate went back', bNow && bNow.url === `${BASE}/b`, bNow?.url);
-  check('tab count after in-tab back', list.filter((t) => t.url === `${BASE}/a`).length === 1);
+  const bUrl = await waitFor(
+    async () => (await pages()).find((t) => t.targetId === b)?.url,
+    (url) => url === `${BASE}/b`,
+  );
+  check('in-tab duplicate went back', bUrl === `${BASE}/b`, bUrl);
+  check('tab count after in-tab back', (await countPages(equals(`${BASE}/a`))) === 1);
 
   // 5. Reload of an existing page is not treated as a duplicate.
+  const documentId = `performance.timeOrigin + ':' + document.readyState`;
+  const before = await evaluate(bSession, documentId);
   await cdp('Page.reload', {}, bSession);
-  await sleep(1000);
+  await waitFor(
+    () => read(bSession, documentId),
+    (id) => id !== undefined && id !== before && id.endsWith(':complete'),
+  );
   check(
     'reload keeps the tab',
     (await pages()).some((t) => t.targetId === b),
@@ -82,71 +107,61 @@ try {
   const claude = await evaluate(
     swSession,
     `(async () => {
-      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       const blank = await chrome.tabs.create({ url: 'about:blank' });
       const groupId = await chrome.tabs.group({ tabIds: [blank.id] });
       await chrome.tabGroups.update(groupId, { title: '⌛Claude' });
       await chrome.tabs.update(blank.id, { url: '${BASE}/a' });
-      await wait(1500);
-      const inGroup = await chrome.tabs.get(blank.id).catch(() => null);
-      return { groupId, tabId: blank.id, url: inGroup?.url ?? null };
+      return blank.id;
     })()`,
   );
-  check('Claude group may open a page open elsewhere', claude.url === `${BASE}/a`, JSON.stringify(claude));
-  await evaluate(swSession, `chrome.tabs.update(${claude.tabId}, { url: '${BASE}/d' })`);
-  await sleep(1000);
-  await open(`${BASE}/d`);
-  await sleep(1500);
-  check(
-    'Claude group tab does not block the user',
-    (await pages()).filter((t) => t.url === `${BASE}/d`).length === 2,
-    await urls(),
-  );
-  await evaluate(swSession, `chrome.tabs.remove(${claude.tabId})`);
-  await sleep(300);
+  const claudeTab = () =>
+    evaluate(swSession, `chrome.tabs.get(${claude}).then((t) => t.status + ' ' + t.url, () => null)`);
+  const claudeState = await waitFor(claudeTab, (s) => s === `complete ${BASE}/a`);
+  check('Claude group may open a page open elsewhere', claudeState === `complete ${BASE}/a`, claudeState);
+  await evaluate(swSession, `chrome.tabs.update(${claude}, { url: '${BASE}/d' })`);
+  await waitFor(claudeTab, (s) => s === `complete ${BASE}/d`);
+  await loaded(await attach(await open(`${BASE}/d`)));
+  check('Claude group tab does not block the user', (await countPages(equals(`${BASE}/d`))) === 2, await urls());
+  await evaluate(swSession, `chrome.tabs.remove(${claude})`);
 
   // 7. Badge counter.
-  const badge = await evaluate(swSession, 'chrome.action.getBadgeText({})');
+  const badgeText = () => evaluate(swSession, 'chrome.action.getBadgeText({})');
+  const badge = await waitFor(badgeText, (text) => text === '3');
   check('badge shows counter', badge === '3', `badge=${badge}`);
 
   // 8. Popup: toggle off, open duplicates (kept), toggle on, dedupe-all closes them.
-  const popup = await open(`chrome-extension://${extId}/popup/popup.html`);
-  await sleep(800);
-  const popupSession = await attach(popup);
-  const popupText = await evaluate(popupSession, 'document.body.innerText');
-  check(
-    'popup renders localized text and counter',
-    /(Duplicates avoided|Duplicados evitados)\s*3\b/.test(popupText),
-    JSON.stringify(popupText),
-  );
+  const popupSession = await attach(await open(`chrome-extension://${extId}/popup/popup.html`));
+  const counterShown = (text) => /(Duplicates avoided|Duplicados evitados)\s*3\b/.test(text);
+  const popupText = await waitFor(() => read(popupSession, 'document.body?.innerText ?? ""'), counterShown);
+  check('popup renders localized text and counter', counterShown(popupText), JSON.stringify(popupText));
   await evaluate(popupSession, 'document.getElementById("enabled").click()');
-  await sleep(500);
-  const badgeOff = await evaluate(swSession, 'chrome.action.getBadgeText({})');
+  const badgeOff = await waitFor(badgeText, (text) => text === 'OFF');
   check('badge shows OFF when disabled', badgeOff === 'OFF', `badge=${badgeOff}`);
-  await open(`${BASE}/c`);
-  await open(`${BASE}/c`);
-  await open(`${BASE}/c?utm_medium=y`);
-  await sleep(1500);
-  check('disabled: duplicates are kept', (await pages()).filter((t) => t.url.startsWith(`${BASE}/c`)).length === 3);
+  for (const path of ['/c', '/c', '/c?utm_medium=y']) await loaded(await attach(await open(`${BASE}${path}`)));
+  check('disabled: duplicates are kept', (await countPages(startsWith(`${BASE}/c`))) === 3);
   await evaluate(popupSession, 'document.getElementById("enabled").click()');
-  await sleep(500);
+  await waitFor(badgeText, (text) => text !== 'OFF');
   await evaluate(popupSession, 'document.getElementById("dedupe").click()');
-  await sleep(1200);
-  list = await pages();
-  const popupMsg = await evaluate(popupSession, 'document.getElementById("message").textContent');
+  const popupMsg = await waitFor(
+    () => evaluate(popupSession, 'document.getElementById("message").textContent'),
+    (text) => /^2 /.test(text),
+  );
   check(
     'dedupeAll closes remaining duplicates',
-    list.filter((t) => t.url.startsWith(`${BASE}/c`)).length === 1 && /^2 /.test(popupMsg),
+    (await countPages(startsWith(`${BASE}/c`))) === 1 && /^2 /.test(popupMsg),
     popupMsg,
   );
 
   // 9. Options page loads, validates and saves.
-  const options = await open(`chrome-extension://${extId}/options/options.html`);
-  await sleep(800);
-  const optSession = await attach(options);
+  const optSession = await attach(await open(`chrome-extension://${extId}/options/options.html`));
+  await waitFor(
+    () => read(optSession, `document.querySelector('[name="excludedGroups"]')?.value ?? ''`),
+    (value) => Boolean(value),
+  );
   const o = await evaluate(
     optSession,
     `(async () => {
+      const until = async (done) => { for (let i = 0; i < 200 && !(await done()); i++) await new Promise(r => setTimeout(r, 50)); };
       const groupsField = document.querySelector('[name="excludedGroups"]');
       const shownGroups = groupsField.value;
       groupsField.value = shownGroups + '\\nWork';
@@ -155,12 +170,13 @@ try {
       row.querySelector('.r-pattern').value = '(';
       row.querySelector('.r-type').value = 'regex';
       document.getElementById('save').click();
-      await new Promise(r => setTimeout(r, 200));
+      await until(() => !document.getElementById('errors').hidden);
       const errorShown = !document.getElementById('errors').hidden;
       row.querySelector('.r-pattern').value = 'bank.com';
       row.querySelector('.r-type').value = 'glob';
       document.getElementById('save').click();
-      await new Promise(r => setTimeout(r, 300));
+      const saved = async () => (await chrome.storage.sync.get('config')).config?.blacklist?.length > 0;
+      await until(saved);
       const { config } = await chrome.storage.sync.get('config');
       document.getElementById('testUrl').value = 'https://online.bank.com/x';
       document.getElementById('testUrl').dispatchEvent(new Event('input'));
@@ -174,6 +190,7 @@ try {
     o.shownGroups === 'Claude\nClaude (MCP)\n?Claude\n?Claude (MCP)' && o.savedGroups?.at(-1) === 'Work',
     JSON.stringify({ shown: o.shownGroups, saved: o.savedGroups }),
   );
+  // Grace period for asynchronous errors triggered by the last actions to reach the event log.
   await sleep(500);
 
   const pageErrors = events.filter(
