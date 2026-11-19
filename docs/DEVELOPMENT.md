@@ -15,9 +15,12 @@ Plain JavaScript with ES modules (Manifest V3), no build step. The extension has
 ## Commands
 
 ```bash
-pnpm install      # development tooling (ESLint, Prettier, TypeScript, @types/chrome)
-pnpm check        # lint + typecheck + coverage, the same as CI
-pnpm lint         # ESLint + Prettier --check
+pnpm install      # development tooling (ESLint, Prettier, TypeScript, @types/chrome) and git hooks
+pnpm check        # the gate: lint + typecheck + coverage, the same as CI and the pre-commit hook
+pnpm verify       # heavy checks run by the pre-push hook
+pnpm fix          # ESLint --fix + Prettier --write, then the gate
+pnpm audit        # dependency advisories
+pnpm lint         # ESLint + Prettier --check + ShellCheck (needs `shellcheck` installed)
 pnpm format       # Prettier --write
 pnpm typecheck    # tsc --checkJs against the Chrome API types (via JSDoc)
 pnpm test         # unit tests (native node --test runner)
@@ -75,6 +78,17 @@ measured. `background.js`, `storage.js`, `i18n.js`, `options.js` and `popup.js` 
 
 `.github/workflows/ci.yml` runs on every push and PR: `pnpm install --frozen-lockfile`,
 `pnpm check`, the e2e with Chrome for Testing and `pnpm package`, uploading the zip as an artifact.
+
+## Git hooks
+
+`pnpm install` points `core.hooksPath` at `.githooks/`, whose one-line scripts call
+`scripts/hooks/*.js`:
+
+- `pre-commit`: the gate, when something is staged.
+- `commit-msg`: Conventional Commits, subject of at most 72 characters.
+- `pre-push`: refuses moving or deleting a published tag, then runs `pnpm verify`.
+- `reference-transaction`: refuses moving or deleting a local tag. `git update-ref -d <tag> <value>`
+  stays allowed because `git pack-refs` deletes loose tags that way.
 
 ## Manual test plan
 

@@ -16,9 +16,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm coverage
+      - run: pnpm check
       - uses: browser-actions/setup-chrome@v2
         id: chrome
       - run: pnpm test:e2e
