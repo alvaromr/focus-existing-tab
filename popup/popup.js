@@ -1,4 +1,5 @@
 import { applyI18n, t } from '../src/lib/i18n.js';
+import { log } from '../src/lib/log.js';
 import { onConfigChange, onStatsChange, updateConfig } from '../src/lib/storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -33,7 +34,7 @@ applyI18n();
 send('getState')
   .then(render)
   .catch((e) => showMessage(String(e)));
-showShortcut().catch(() => {});
+showShortcut().catch((cause) => log.warn('reading the keyboard shortcut', cause));
 onConfigChange((config) => (enabledBox.checked = config.enabled));
 onStatsChange((stats) => ($('avoided').textContent = String(stats.avoided)));
 

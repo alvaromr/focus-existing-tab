@@ -97,9 +97,9 @@ test('analyzeUrl returns null key when not acting', () => {
 
 // ---- edge cases ----
 
-test('a regex rule that fails to compile never matches (and never throws)', () => {
-  assert.equal(ruleMatches(regex('('), 'https://a.com/'), false);
-  assert.equal(findMatchingRule([regex('('), glob('a.com')], 'https://a.com/').pattern, 'a.com');
+test('a regex rule that fails to compile throws: rules must be validated by normalizeConfig first', () => {
+  assert.throws(() => ruleMatches(regex('('), 'https://a.com/'), SyntaxError);
+  assert.throws(() => findMatchingRule([regex('('), glob('a.com')], 'https://a.com/'), SyntaxError);
 });
 
 test('regex rules with g/y flags give stable results across calls', () => {

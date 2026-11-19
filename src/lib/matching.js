@@ -45,12 +45,9 @@ function subjectOf(kind, u) {
 export function ruleMatches(rule, url) {
   const u = url instanceof URL ? url : parseUrl(url);
   if (!u) return false;
-  try {
-    const { re, subject } = compileRule(rule);
-    return re.test(subjectOf(subject, u));
-  } catch {
-    return false;
-  }
+  // Throws on an invalid regex: rules reach here only after normalizeConfig has validated them.
+  const { re, subject } = compileRule(rule);
+  return re.test(subjectOf(subject, u));
 }
 
 export function findMatchingRule(rules, url) {

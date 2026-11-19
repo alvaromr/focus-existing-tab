@@ -2,6 +2,7 @@ import { resolveDecision } from './lib/matching.js';
 import { isBlankUrl, isEligibleUrl } from './lib/normalize.js';
 import { canCloseTab, excludedGroupIds, findExistingTab, planDedupeAll } from './lib/dedupe.js';
 import { createNavigationTracker } from './lib/navigation-tracker.js';
+import { log } from './lib/log.js';
 import {
   addAvoided,
   loadConfig,
@@ -12,6 +13,14 @@ import {
   updateConfig,
 } from './lib/storage.js';
 
+// Catch handlers. `warnOn`: an expected race (the tab or window went away); the caller goes on
+// with `null`. `errorOn`: anything else.
+const warnOn = (context) => (cause) => {
+  log.warn(context, cause);
+  return null;
+};
+const errorOn = (context) => (cause) => log.error(context, cause);
+
 // ---------- configuration ----------
 
 let config = null;
@@ -20,21 +29,21 @@ const ready = loadConfig().then((c) => {
 });
 onConfigChange((c) => {
   config = c;
-  refreshBadge();
+  refreshBadge().catch(errorOn('refreshing the badge'));
 });
-onStatsChange(() => refreshBadge());
+onStatsChange(() => refreshBadge().catch(errorOn('refreshing the badge')));
 
 // ---------- navigation events ----------
 
 const nav = createNavigationTracker();
-chrome.tabs.query({}).then((tabs) => nav.seed(tabs));
+chrome.tabs.query({}).then((tabs) => nav.seed(tabs), errorOn('seeding the open tabs'));
 
 chrome.tabs.onCreated.addListener((tab) => nav.tabCreated(tab));
 chrome.tabs.onRemoved.addListener((tabId) => nav.tabRemoved(tabId));
 
 chrome.webNavigation.onBeforeNavigate.addListener(({ frameId, tabId, url }) => {
   if (frameId !== 0) return;
-  handleNavigation(tabId, url, 'before', nav.beforeNavigate(tabId, url)).catch(console.error);
+  handleNavigation(tabId, url, 'before', nav.beforeNavigate(tabId, url)).catch(errorOn('handling a navigation'));
 });
 
 chrome.webNavigation.onCommitted.addListener(({ frameId, tabId, url, transitionType }) => {
@@ -42,7 +51,7 @@ chrome.webNavigation.onCommitted.addListener(({ frameId, tabId, url, transitionT
   const { goBack: back, check } = nav.committed(tabId, url, transitionType);
   if (back) return goBack(tabId);
   const handled = check ? handleNavigation(tabId, url, 'committed', check) : Promise.resolve();
-  handled.catch(console.error).finally(() => nav.settled(tabId));
+  handled.catch(errorOn('handling a navigation')).finally(() => nav.settled(tabId));
 });
 
 chrome.webNavigation.onErrorOccurred.addListener(({ frameId, tabId }) => {
@@ -61,7 +70,7 @@ async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }) {
   const decision = resolveDecision(config, url);
   if (!decision.act) return;
 
-  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  const tab = await chrome.tabs.get(tabId).catch(warnOn('reading the navigating tab'));
   if (!tab) return;
   const previous = prevUrl ?? tab.url ?? '';
   // Reloading the page the tab already shows is not opening a duplicate (unless configured so).
@@ -74,7 +83,7 @@ async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }) {
   if (action === 'ignore') return;
 
   await focusTab(target);
-  if (action === 'close') await chrome.tabs.remove(tabId).catch(() => {});
+  if (action === 'close') await chrome.tabs.remove(tabId).catch(warnOn('closing the duplicate tab'));
   if (action === 'back' && nav.scheduleGoBack(tabId, url, stage) === 'now') goBack(tabId);
   if (action !== 'focus' || config.countFocusOnly) await addAvoided(1);
 }
@@ -99,33 +108,37 @@ async function queryExcludedGroups() {
 
 function goBack(tabId) {
   nav.goBackIssued(tabId);
-  chrome.tabs.goBack(tabId).catch(() => nav.goBackFailed(tabId));
+  chrome.tabs.goBack(tabId).catch((cause) => {
+    log.warn('going back in the duplicate tab', cause);
+    nav.goBackFailed(tabId);
+  });
 }
 
 async function focusTab(tab) {
   if (config.focusWindow) {
-    const win = await chrome.windows.get(tab.windowId).catch(() => null);
+    const win = await chrome.windows.get(tab.windowId).catch(warnOn('reading the window of the existing tab'));
     if (win) {
       const update = { focused: true };
       if (win.state === 'minimized' && config.restoreMinimized) update.state = 'normal';
-      await chrome.windows.update(tab.windowId, update).catch(() => {});
+      await chrome.windows.update(tab.windowId, update).catch(warnOn('focusing the window of the existing tab'));
     }
   }
-  await chrome.tabs.update(tab.id, { active: true }).catch(() => {});
+  await chrome.tabs.update(tab.id, { active: true }).catch(warnOn('activating the existing tab'));
 }
 
 async function dedupeAll() {
   await ready;
   const [tabs, current, excluded] = await Promise.all([
     queryTabs(),
-    chrome.windows.getLastFocused().catch(() => null),
+    chrome.windows.getLastFocused().catch(warnOn('reading the last focused window')),
     queryExcludedGroups(),
   ]);
   const plan = planDedupeAll(config, tabs, current?.id, excluded);
-  if (plan.close.length) {
-    await chrome.tabs.remove(plan.close).catch(() => {});
-    await addAvoided(plan.close.length);
-  }
+  if (!plan.close.length) return { closed: 0 };
+  // tabs.remove rejects without closing anything when one of the tabs is already gone.
+  const removed = await chrome.tabs.remove(plan.close).then(() => true, warnOn('closing the duplicate tabs'));
+  if (!removed) return { closed: 0 };
+  await addAvoided(plan.close.length);
   return { closed: plan.close.length };
 }
 
@@ -150,8 +163,8 @@ async function refreshBadge() {
 }
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'dedupe-all') dedupeAll().catch(console.error);
-  if (command === 'toggle-enabled') toggleEnabled().catch(console.error);
+  if (command === 'dedupe-all') dedupeAll().catch(errorOn('deduplicating all tabs'));
+  if (command === 'toggle-enabled') toggleEnabled().catch(errorOn('toggling the extension'));
 });
 
 const MESSAGE_HANDLERS = {
@@ -173,6 +186,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
-chrome.runtime.onInstalled.addListener(() => refreshBadge().catch(console.error));
-chrome.runtime.onStartup.addListener(() => refreshBadge().catch(console.error));
-refreshBadge().catch(console.error);
+chrome.runtime.onInstalled.addListener(() => refreshBadge().catch(errorOn('refreshing the badge')));
+chrome.runtime.onStartup.addListener(() => refreshBadge().catch(errorOn('refreshing the badge')));
+refreshBadge().catch(errorOn('refreshing the badge'));
