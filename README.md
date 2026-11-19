@@ -74,13 +74,13 @@ It injects no code into pages and makes no network requests. URLs are only read 
 a navigation. Details in [PRIVACY.md](PRIVACY.md). To report a vulnerability, see
 [SECURITY.md](SECURITY.md).
 
-## Development
+## Contributing
 
 Plain JavaScript with ES modules, no build step. Node (version in `.node-version`) and pnpm.
 
 ```bash
 pnpm install     # development tooling only
-pnpm check       # lint + typecheck + tests with coverage (what CI runs)
+pnpm check       # lint + typecheck + secret scan + tests with coverage (what CI runs)
 pnpm test:e2e    # real run in headless Chromium
 pnpm package     # dist/focus-existing-tab-<version>.zip
 ```
