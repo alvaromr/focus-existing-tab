@@ -14,7 +14,7 @@ const cache = new Map();
  *    unless the pattern itself contains `://`.
  * Regex rules are tested against the full URL (`/body/flags` or bare body).
  */
-export function compileRule(rule) {
+function compileRule(rule) {
   const key = `${rule.type}:${rule.pattern}`;
   let compiled = cache.get(key);
   if (compiled) return compiled;

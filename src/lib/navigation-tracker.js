@@ -4,7 +4,7 @@
 // State is lost when the service worker is suspended, which is harmless: every entry only
 // matters for a few hundred milliseconds around a navigation.
 
-export const SKIP_TTL_MS = 2000;
+const SKIP_TTL_MS = 2000;
 
 export function createNavigationTracker({ now = Date.now } = {}) {
   const newTabs = new Set(); // tabs created and not yet committed a navigation

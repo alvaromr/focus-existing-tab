@@ -8,7 +8,7 @@ export function globToRegExpSource(glob) {
     .replace(/\?/g, '.');
 }
 
-export function globToRegExp(glob, flags = '') {
+function globToRegExp(glob, flags = '') {
   const key = `${flags}:${glob}`;
   let re = cache.get(key);
   if (!re) {
@@ -18,7 +18,7 @@ export function globToRegExp(glob, flags = '') {
   return re;
 }
 
-export function globMatches(glob, value, flags = '') {
+function globMatches(glob, value, flags = '') {
   return globToRegExp(glob, flags).test(value);
 }
 

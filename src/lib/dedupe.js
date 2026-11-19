@@ -1,7 +1,7 @@
 import { analyzeUrl, keyFor } from './matching.js';
 import { matchesAnyGlob } from './glob.js';
 
-export function tabUrl(tab) {
+function tabUrl(tab) {
   return tab.url || tab.pendingUrl || '';
 }
 
@@ -15,7 +15,7 @@ function isConsidered(config, tab) {
 }
 
 // Chrome reports -1 (TAB_GROUP_ID_NONE) for ungrouped tabs; treat "no group" as a group of its own.
-export function groupOf(tab) {
+function groupOf(tab) {
   return tab.groupId ?? -1;
 }
 

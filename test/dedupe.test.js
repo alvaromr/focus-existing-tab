@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { findExistingTab, planDedupeAll, canCloseTab, tabUrl, groupOf, excludedGroupIds } from '../src/lib/dedupe.js';
+import { findExistingTab, planDedupeAll, canCloseTab, excludedGroupIds } from '../src/lib/dedupe.js';
 import { normalizeConfig } from '../src/lib/config.js';
 
 const cfg = (overrides) => normalizeConfig(overrides).config;
@@ -15,10 +15,15 @@ const tab = (url, extra = {}) => ({
   ...extra,
 });
 
-test('tabUrl prefers url and falls back to pendingUrl', () => {
-  assert.equal(tabUrl({ url: 'https://a.com/', pendingUrl: 'https://b.com/' }), 'https://a.com/');
-  assert.equal(tabUrl({ url: '', pendingUrl: 'https://b.com/' }), 'https://b.com/');
-  assert.equal(tabUrl({}), '');
+test("a tab's URL is its url, then its pendingUrl; a tab with neither never matches", () => {
+  const nav = tab('chrome://newtab/');
+  const both = tab('https://a.com/', { pendingUrl: 'https://b.com/' });
+  assert.equal(findExistingTab(cfg(), [both], nav, 'https://a.com/', null), both);
+  assert.equal(findExistingTab(cfg(), [both], nav, 'https://b.com/', null), null);
+  const pendingOnly = tab('', { pendingUrl: 'https://b.com/' });
+  assert.equal(findExistingTab(cfg(), [pendingOnly], nav, 'https://b.com/', null), pendingOnly);
+  const neither = { id: 99, windowId: 1 };
+  assert.equal(findExistingTab(cfg(), [neither], nav, 'https://a.com/', null), null);
 });
 
 test('finds an equivalent tab and ignores the navigating tab itself', () => {
@@ -185,7 +190,12 @@ test('groupPolicy=ignore (default): groups play no role', () => {
   assert.equal(findExistingTab(c, [grouped], nav, 'https://a.com/', null), grouped);
   const other = tab('https://a.com/', { groupId: 9 });
   assert.equal(findExistingTab(c, [other], tab('https://b.com/', { groupId: 7 }), 'https://a.com/', null), other);
-  assert.equal(groupOf({}), -1);
+});
+
+test('a tab without groupId counts as ungrouped', () => {
+  const c = cfg({ groupPolicy: 'same' });
+  const ungrouped = tab('https://a.com/', { groupId: -1 });
+  assert.equal(findExistingTab(c, [ungrouped], tab('chrome://newtab/'), 'https://a.com/', null), ungrouped);
 });
 
 test('groupPolicy=same: only the same group; ungrouped is a group of its own', () => {

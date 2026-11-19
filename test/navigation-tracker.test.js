@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createNavigationTracker, SKIP_TTL_MS } from '../src/lib/navigation-tracker.js';
+import { createNavigationTracker } from '../src/lib/navigation-tracker.js';
 
 const A = 'https://a.com/';
 const B = 'https://b.com/';
@@ -82,10 +82,10 @@ test('goBack runs immediately when the duplicate already committed (fast commit 
   assert.deepEqual(t.committed(1, B, 'link'), { check: { wasNew: false, prevUrl: A } });
 });
 
-test('skip marker expires after the TTL and is dropped on goBack failure or error', () => {
+test('skip marker lasts 2 s and is dropped on goBack failure or error', () => {
   const t = tracker();
   t.goBackIssued(1);
-  t.advance(SKIP_TTL_MS - 1);
+  t.advance(1999);
   assert.equal(t.shouldSkip(1), true);
   t.advance(2);
   assert.equal(t.shouldSkip(1), false);

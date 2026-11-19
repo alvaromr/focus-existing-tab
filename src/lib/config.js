@@ -12,18 +12,18 @@
  *   normalization: Normalization, query: QueryOptions }} Config
  */
 
-export const CONFIG_VERSION = 1;
+const CONFIG_VERSION = 1;
 
-export const MODES = ['blacklist', 'whitelist'];
-export const IN_TAB_ACTIONS = ['back', 'focus', 'close', 'ignore'];
-export const SCOPES = ['all', 'window'];
-export const PINNED_POLICIES = ['protect', 'ignore', 'normal'];
-export const GROUP_POLICIES = ['ignore', 'same', 'exclude'];
-export const INCOGNITO_POLICIES = ['separate', 'shared'];
-export const WINDOW_TYPES = ['all', 'normal'];
+const MODES = ['blacklist', 'whitelist'];
+const IN_TAB_ACTIONS = ['back', 'focus', 'close', 'ignore'];
+const SCOPES = ['all', 'window'];
+const PINNED_POLICIES = ['protect', 'ignore', 'normal'];
+const GROUP_POLICIES = ['ignore', 'same', 'exclude'];
+const INCOGNITO_POLICIES = ['separate', 'shared'];
+const WINDOW_TYPES = ['all', 'normal'];
 export const RANK_CRITERIA = ['group', 'window', 'active', 'pinned', 'loaded'];
-export const TIE_BREAKS = ['oldest', 'newest'];
-export const RULE_TYPES = ['glob', 'regex'];
+const TIE_BREAKS = ['oldest', 'newest'];
+const RULE_TYPES = ['glob', 'regex'];
 
 export const DEFAULT_CONFIG = Object.freeze({
   version: CONFIG_VERSION,
