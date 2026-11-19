@@ -34,6 +34,9 @@ A glob without `/` is a domain pattern; with `/` it is a URL pattern. `*` matche
 
 ## JSON format (export / import)
 
+An example export with every field (`normalizeConfig` in `src/lib/config.js` defines the format
+and the defaults; a unit test keeps this example valid and complete):
+
 ```json
 {
   "version": 1,

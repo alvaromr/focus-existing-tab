@@ -5,10 +5,12 @@ Plain JavaScript with ES modules (Manifest V3), no build step. The extension has
 
 ## Requirements
 
-- Node 26 (`.node-version`; minimum 22 because the e2e runner uses the global `WebSocket`).
-- pnpm 12 (`packageManager` in `package.json`). `pnpm-workspace.yaml` blocks dependency install
-  scripts, requires every version to be at least 7 days old (`minimumReleaseAge`) and refuses trust
-  downgrades (`trustPolicy: no-downgrade`).
+- Node: the version in `.node-version`; the oldest supported is in `package.json` `engines`, set by
+  the e2e runner's use of the global `WebSocket`.
+- pnpm: the version in `package.json` `packageManager`. `pnpm-workspace.yaml` blocks dependency
+  install scripts, makes every new version wait `minimumReleaseAge` and refuses trust downgrades;
+  its comments give the reason for each setting, override and ignored advisory.
+- `shellcheck` on the `PATH`, for `pnpm lint`.
 - For the e2e, a browser that honours `--load-extension`: Brave, Chromium or Chrome for Testing
   (branded Google Chrome ≥ 137 ignores it).
 
@@ -77,7 +79,7 @@ e2e covers them (without a metric) and the type check validates them against `@t
   run fails below a 100% score. An equivalent mutant (one no test can tell apart, such as a cache
   being skipped) is disabled in place with a `// Stryker disable` comment stating why.
 - **E2E** (`test/e2e/smoke.js`): launches a headless browser with a temporary profile, loads the
-  extension and checks 16 scenarios over the DevTools protocol (duplicate tab, redirect, in-tab
+  extension and checks its scenarios over the DevTools protocol (duplicate tab, redirect, in-tab
   navigation, reload, badge, popup, options, absence of errors). It finds Brave/Chromium in the
   usual locations; otherwise `CHROME=/path/to/binary`. `CHROME_ARGS` adds flags (CI passes
   `--no-sandbox`). Chrome for Testing: `pnpm dlx @puppeteer/browsers install chrome@stable`.
@@ -144,7 +146,7 @@ logged to its console.
 
 ## Security
 
-Review of the full 1.0.0 code:
+Review of the full code, last on 2026-11-19 (adds the `tabGroups` permission, read-only):
 
 - **Surface**: no `content_scripts`, `host_permissions`, `externally_connectable`, network requests
   or remote code. The MV3 default CSP (`script-src 'self'`) applies to options and popup.

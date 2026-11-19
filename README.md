@@ -75,8 +75,7 @@ a navigation. Details in [PRIVACY.md](PRIVACY.md).
 
 ## Development
 
-Plain JavaScript with ES modules, no build step. Node 26 (pinned in `.node-version`; minimum 22)
-and pnpm.
+Plain JavaScript with ES modules, no build step. Node (version in `.node-version`) and pnpm.
 
 ```bash
 pnpm install     # development tooling only
@@ -86,7 +85,8 @@ pnpm package     # dist/focus-existing-tab-<version>.zip
 ```
 
 Architecture, tests, CI, security review, manual test plan and releases in
-[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Changes per version in [CHANGELOG.md](CHANGELOG.md).
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md); the rules for contributors in [AGENTS.md](AGENTS.md).
+Changes per version in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

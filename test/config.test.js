@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   normalizeConfig,
   DEFAULT_CONFIG,
@@ -270,6 +271,14 @@ test('the defaults are the documented ones', () => {
       significant: [],
     },
   });
+});
+
+test('the JSON example in docs/CONFIGURATION.md is a complete, valid configuration', () => {
+  const doc = readFileSync(new URL('../docs/CONFIGURATION.md', import.meta.url), 'utf8');
+  const example = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(doc)[1]);
+  const { config, errors } = normalizeConfig(example);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(config, example);
 });
 
 test('createRule starts an empty glob rule that inherits every query setting', () => {
