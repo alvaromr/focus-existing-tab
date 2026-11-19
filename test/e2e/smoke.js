@@ -1,5 +1,5 @@
 // End-to-end smoke test: headless Chromium + the unpacked extension, driven over CDP.
-// Browser requirements and CHROME override: see scripts/lib/cdp.js. Usage: npm run test:e2e
+// Browser requirements and CHROME override: see scripts/lib/cdp.js. Usage: pnpm test:e2e
 import { createServer } from 'node:http';
 import { launchChromium, sleep } from '../../scripts/lib/cdp.js';
 
