@@ -90,9 +90,12 @@ export async function launchChromium({ extraArgs = [] } = {}) {
     );
     for (const w of workers) {
       const sessionId = await attach(w.targetId);
+      // A worker whose manifest cannot be read (another extension still starting) is not ours.
       const name = await evaluate(sessionId, 'chrome.runtime.getManifest().name').catch(() => null);
       if (name === EXT_NAME) return { extId: new URL(w.url).host, swSession: sessionId };
-      await cdp('Target.detachFromTarget', { sessionId }).catch(() => {});
+      await cdp('Target.detachFromTarget', { sessionId }).catch((e) =>
+        console.warn(`could not detach from ${w.url}: ${e.message}`),
+      );
     }
     return null;
   };
