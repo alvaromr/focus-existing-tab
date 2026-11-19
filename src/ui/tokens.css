@@ -1,5 +1,6 @@
-/* Design tokens shared by the options page and the popup. src/lib/badge.js uses the light
-   --accent and --muted for the toolbar badge, which CSS cannot reach. */
+/* Design tokens shared by the options page and the popup. src/lib/badge.js repeats the light
+   --accent and --muted for the toolbar badge, which CSS cannot reach; test/badge.test.js fails if
+   they stop matching. */
 :root {
   color-scheme: light dark;
   --accent: #2563eb;
