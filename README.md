@@ -71,7 +71,8 @@ The full guide to every option and to the behaviour in each case is in
 | `storage`       | Save the configuration (`sync`) and the counter (`local`).                     |
 
 It injects no code into pages and makes no network requests. URLs are only read in memory during
-a navigation. Details in [PRIVACY.md](PRIVACY.md).
+a navigation. Details in [PRIVACY.md](PRIVACY.md). To report a vulnerability, see
+[SECURITY.md](SECURITY.md).
 
 ## Development
 

@@ -46,4 +46,5 @@ Before changing a practice, read `docs/decisions/`.
 - Development, tests, CI, hooks, security review, manual test plan, releases:
   [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 - Changes per version: [CHANGELOG.md](CHANGELOG.md). Privacy: [PRIVACY.md](PRIVACY.md).
+  Vulnerability reports: [SECURITY.md](SECURITY.md).
 - Web Store listing: [store/listing.md](store/listing.md).
