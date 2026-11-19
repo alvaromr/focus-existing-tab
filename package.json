@@ -21,6 +21,7 @@
     "icons": "node scripts/make-icons.js",
     "screenshots": "node scripts/screenshots.js",
     "package": "bash scripts/package.sh",
+    "smoke:package": "bash scripts/smoke-package.sh",
     "release": "node scripts/release.js"
   },
   "repository": {

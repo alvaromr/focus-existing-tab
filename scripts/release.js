@@ -4,17 +4,20 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { EXT_DIR } from './lib/cdp.js';
+import { REPO_DIR } from './lib/cdp.js';
 
 const arg = process.argv[2];
 if (!arg) throw new Error('usage: pnpm release patch|minor|major|<x.y.z>');
 
-const git = (...args) => execFileSync('git', args, { cwd: EXT_DIR, encoding: 'utf8' }).trim();
+const git = (...args) => execFileSync('git', args, { cwd: REPO_DIR, encoding: 'utf8' }).trim();
 if (git('status', '--porcelain')) throw new Error('working tree is not clean');
+// Bump only once the release can no longer fail: the heavy checks and the packaged-zip smoke.
+execFileSync('pnpm', ['verify'], { cwd: REPO_DIR, stdio: 'inherit' });
+execFileSync('pnpm', ['smoke:package'], { cwd: REPO_DIR, stdio: 'inherit' });
 
-const manifestPath = join(EXT_DIR, 'manifest.json');
-const packagePath = join(EXT_DIR, 'package.json');
-const changelogPath = join(EXT_DIR, 'CHANGELOG.md');
+const manifestPath = join(REPO_DIR, 'manifest.json');
+const packagePath = join(REPO_DIR, 'package.json');
+const changelogPath = join(REPO_DIR, 'CHANGELOG.md');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 

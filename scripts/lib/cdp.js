@@ -8,7 +8,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const EXT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+export const REPO_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+// The extension to load: the repository itself, or EXTENSION_DIR (an unpacked release zip).
+const EXT_DIR = process.env.EXTENSION_DIR || REPO_DIR;
 const EXT_NAME = JSON.parse(readFileSync(join(EXT_DIR, '_locales', 'en', 'messages.json'), 'utf8')).extName.message;
 
 const CANDIDATES = [

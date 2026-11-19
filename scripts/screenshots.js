@@ -1,10 +1,10 @@
 // Renders 1280x800 store screenshots of the options page and the popup into store/screenshots/.
-// Usage: npm run screenshots
+// Usage: pnpm screenshots
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { EXT_DIR, launchChromium, sleep } from './lib/cdp.js';
+import { REPO_DIR, launchChromium, sleep } from './lib/cdp.js';
 
-const OUT = join(EXT_DIR, 'store', 'screenshots');
+const OUT = join(REPO_DIR, 'store', 'screenshots');
 const WIDTH = 1280;
 const HEIGHT = 800;
 

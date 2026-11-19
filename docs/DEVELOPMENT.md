@@ -31,6 +31,7 @@ pnpm mutation     # Stryker over src/lib (stryker.config.json); report in report
 pnpm test:e2e     # real run in headless Chromium
 pnpm screenshots  # regenerate store/screenshots/*.png (same browser as the e2e)
 pnpm package      # dist/focus-existing-tab-<version>.zip
+pnpm smoke:package  # builds the zip, unpacks it into a temporary directory and runs the e2e on it
 pnpm icons        # regenerate icons/*.png
 pnpm release      # bump version, changelog, commit and tag (see Releases)
 ```
@@ -60,6 +61,9 @@ test/e2e/smoke.js                end-to-end test in headless Chromium
 scripts/lib/cdp.js               headless Chromium launcher + CDP client (e2e and screenshots)
 scripts/screenshots.js           1280×800 store screenshots
 scripts/package.sh               builds the zip
+scripts/smoke-package.sh         e2e against the unpacked zip
+scripts/release-notes.sh         one version's changelog section, for the GitHub Release
+scripts/hooks/                   git hooks (installed through .githooks/)
 scripts/release.js               version bump, changelog, commit and tag
 scripts/make-icons.js            generates the PNG icons (no dependencies)
 store/                           Web Store listing: copy, checklist and screenshots
@@ -168,11 +172,12 @@ Distribution happens through GitHub Releases (a zip to load as an unpacked exten
 the Chrome Web Store.
 
 1. Record changes under `## [Unreleased]` in [CHANGELOG.md](../CHANGELOG.md) as you go.
-2. With a clean tree and green CI: `pnpm release patch|minor|major` (or `x.y.z`). The script bumps
-   the version in both files, dates the changelog section, commits `chore(release): vX.Y.Z` and
-   creates the annotated tag `vX.Y.Z`.
+2. With a clean tree and green CI: `pnpm release patch|minor|major` (or `x.y.z`). The script runs
+   `pnpm verify` and `pnpm smoke:package`, then bumps the version in both files, dates the
+   changelog section, commits `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`.
 3. `git push --follow-tags`. The `release.yml` workflow checks that the tag matches the manifest,
-   runs `pnpm check`, packages and publishes the GitHub Release with the zip and the changelog notes.
+   runs `pnpm check` and `pnpm smoke:package`, and publishes the GitHub Release with the zip and
+   the changelog notes (`scripts/release-notes.sh`).
 
 Should it ever go to the Chrome Web Store: listing copy, permission justifications and checklist in
 [store/listing.md](../store/listing.md); screenshots in `store/screenshots/` (`pnpm screenshots`);
