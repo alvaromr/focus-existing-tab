@@ -12,10 +12,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 - "Leave grouped tabs alone" value for "Tab groups" (`groupPolicy: "exclude"`): tabs in any group
   are never duplicates and never block others; only ungrouped tabs are compared.
 
+### Changed
+
+- The "Ignore groups" value of "Tab groups" is now labelled "Groups don't matter (compare with every
+  tab)", which is what it does.
+- Failed tab and window operations (a tab closed meanwhile, for instance) are logged to the service
+  worker console instead of being silently ignored.
+
 ### Fixed
 
 - Claude in Chrome no longer loses its tab group when it opens a page that is already open: its
   groups (`Claude`, `Claude (MCP)`, with or without a status prefix) are excluded by default.
+- On a busy machine, opening the same page twice in quick succession could close both tabs; now
+  only the later one is treated as the duplicate.
+- "Deduplicate all" no longer counts tabs as closed when closing them failed.
 
 ## [1.0.0] - 2026-09-10
 
