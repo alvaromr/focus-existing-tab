@@ -20,39 +20,40 @@ function compileRule(rule) {
   if (compiled) return compiled;
 
   if (rule.type === 'regex') {
-    compiled = { re: compileRegex(rule.pattern), subject: 'href' };
+    compiled = { re: compileRegex(rule.pattern), subject: SUBJECTS.href };
   } else if (!rule.pattern.includes('/')) {
     const body = globToRegExpSource(rule.pattern.toLowerCase());
     const prefix = rule.pattern.startsWith('*') ? '' : '(?:[^/]*\\.)?';
     // `host:port` patterns compare against host+port, plain ones against the hostname.
-    const subject = rule.pattern.includes(':') ? 'hostport' : 'host';
+    const subject = rule.pattern.includes(':') ? SUBJECTS.hostport : SUBJECTS.host;
     compiled = { re: new RegExp(`^${prefix}${body}$`), subject };
   } else {
     const body = globToRegExpSource(rule.pattern);
-    compiled = { re: new RegExp(`^${body}$`), subject: rule.pattern.includes('://') ? 'href' : 'schemeless' };
+    const subject = rule.pattern.includes('://') ? SUBJECTS.href : SUBJECTS.schemeless;
+    compiled = { re: new RegExp(`^${body}$`), subject };
   }
   cache.set(key, compiled);
   return compiled;
 }
 
-function subjectOf(kind, u) {
-  if (kind === 'host') return u.hostname.toLowerCase();
-  if (kind === 'hostport') return u.host.toLowerCase();
-  if (kind === 'schemeless') return u.href.slice(u.protocol.length + 2);
-  return u.href;
-}
+/** The part of a URL each kind of pattern is compared against. */
+const SUBJECTS = {
+  host: (u) => u.hostname.toLowerCase(),
+  hostport: (u) => u.host.toLowerCase(),
+  schemeless: (u) => u.href.slice(u.protocol.length + 2),
+  href: (u) => u.href,
+};
 
 export function ruleMatches(rule, url) {
   const u = url instanceof URL ? url : parseUrl(url);
   if (!u) return false;
   // Throws on an invalid regex: rules reach here only after normalizeConfig has validated them.
   const { re, subject } = compileRule(rule);
-  return re.test(subjectOf(subject, u));
+  return re.test(subject(u));
 }
 
 export function findMatchingRule(rules, url) {
   const u = url instanceof URL ? url : parseUrl(url);
-  if (!u) return null;
   return rules.find((r) => r.enabled !== false && ruleMatches(r, u)) || null;
 }
 

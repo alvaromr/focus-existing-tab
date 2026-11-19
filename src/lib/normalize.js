@@ -19,6 +19,7 @@ export function isBlankUrl(url) {
 export function parseUrl(url) {
   try {
     return new URL(url);
+    // Stryker disable next-line BlockStatement: an empty catch returns undefined, as falsy as null for every caller.
   } catch {
     return null;
   }
@@ -39,10 +40,12 @@ function filterParams(entries, query) {
   });
 }
 
+// By name, then by value.
 function compareEntries([ka, va], [kb, vb]) {
-  if (ka !== kb) return ka < kb ? -1 : 1;
-  if (va === vb) return 0;
-  return va < vb ? -1 : 1;
+  if (ka < kb) return -1;
+  if (ka > kb) return 1;
+  if (va < vb) return -1;
+  return va > vb ? 1 : 0;
 }
 
 /**
@@ -70,7 +73,8 @@ export function normalizeUrl(url, normalization, query) {
   if (!query.orderMatters) kept.sort(compareEntries);
   const search = kept.length ? `?${new URLSearchParams(kept).toString()}` : '';
 
-  const hash = normalization.ignoreFragment || u.hash === '#' ? '' : u.hash;
+  // URL.hash is '' for both no fragment and an empty one (`#`).
+  const hash = normalization.ignoreFragment ? '' : u.hash;
 
   return `${scheme}//${host}${port}${path}${search}${hash}`;
 }

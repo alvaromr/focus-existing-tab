@@ -2,7 +2,7 @@ import { analyzeUrl, keyFor } from './matching.js';
 import { matchesAnyGlob } from './glob.js';
 
 function tabUrl(tab) {
-  return tab.url || tab.pendingUrl || '';
+  return tab.url || tab.pendingUrl;
 }
 
 /** Whether this tab may be closed by the extension. */
@@ -21,6 +21,7 @@ function groupOf(tab) {
 
 /** Ids of the tab groups (from `chrome.tabGroups.query`) whose title matches `config.excludedGroups`. */
 export function excludedGroupIds(config, groups) {
+  // Stryker disable next-line StringLiteral: any non-title stand-in is equivalent; '' only keeps a pattern like "undefined" from matching an untitled group.
   return new Set(groups.filter((g) => matchesAnyGlob(config.excludedGroups, g.title ?? '', 'iu')).map((g) => g.id));
 }
 
@@ -32,7 +33,8 @@ function isExcluded(config, tab, excludedIds) {
 }
 
 const CRITERIA = {
-  group: (tab, ref) => ref.groupId !== undefined && groupOf(tab) === ref.groupId,
+  // Deduplicate-all has no reference group (undefined), which no tab's group equals.
+  group: (tab, ref) => groupOf(tab) === ref.groupId,
   window: (tab, ref) => tab.windowId === ref.windowId,
   active: (tab) => !!tab.active,
   pinned: (tab) => !!tab.pinned,
@@ -53,8 +55,10 @@ function best(tabs, ref, config) {
   return tabs.reduce((a, b) => {
     const ra = rank(a, ref, config);
     const rb = rank(b, ref, config);
-    if (ra !== rb) return ra > rb ? a : b;
-    return a.id <= b.id !== newest ? a : b;
+    if (ra > rb) return a;
+    if (ra < rb) return b;
+    // Stryker disable next-line EqualityOperator: tab ids are unique, so < and <= never differ.
+    return a.id < b.id !== newest ? a : b;
   });
 }
 
@@ -92,14 +96,14 @@ export function planDedupeAll(config, tabs, activeWindowId, excludedIds = new Se
   const groups = new Map();
   for (const t of tabs) {
     if (t.id == null || !isConsidered(config, t) || isExcluded(config, t, excludedIds)) continue;
-    const { act, key } = analyzeUrl(config, tabUrl(t));
-    if (!act || !key) continue;
-    const groupKey = [
-      config.incognitoPolicy === 'separate' && t.incognito ? 'i' : 'n',
-      config.scope === 'window' ? t.windowId : '',
-      config.groupPolicy === 'same' ? groupOf(t) : '',
+    const { key } = analyzeUrl(config, tabUrl(t)); // null when the extension does not act on it
+    if (!key) continue;
+    const groupKey = JSON.stringify([
+      config.incognitoPolicy === 'separate' && !!t.incognito,
+      config.scope === 'window' && t.windowId,
+      config.groupPolicy === 'same' && groupOf(t),
       key,
-    ].join('|');
+    ]);
     if (!groups.has(groupKey)) groups.set(groupKey, []);
     groups.get(groupKey).push(t);
   }

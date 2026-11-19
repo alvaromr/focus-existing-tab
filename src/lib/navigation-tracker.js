@@ -20,7 +20,7 @@ export function createNavigationTracker({ now = Date.now } = {}) {
   return {
     /** Seed committed URLs from the tabs that already exist (service worker start). */
     seed(tabs) {
-      for (const t of tabs) if (t.id != null && !committedUrl.has(t.id)) committedUrl.set(t.id, t.url || '');
+      for (const t of tabs) if (!committedUrl.has(t.id)) committedUrl.set(t.id, t.url || '');
     },
 
     tabCreated(tab) {
@@ -101,11 +101,7 @@ export function createNavigationTracker({ now = Date.now } = {}) {
 
     /** True while the tab is performing the goBack we triggered (cleared by settled/error/TTL). */
     shouldSkip(tabId) {
-      const deadline = skipUntil.get(tabId);
-      if (deadline === undefined) return false;
-      if (now() < deadline) return true;
-      skipUntil.delete(tabId);
-      return false;
+      return now() < (skipUntil.get(tabId) ?? 0); // no marker: nothing to skip
     },
 
     /** Mark that a goBack was issued for the tab; its own events must be ignored. */
