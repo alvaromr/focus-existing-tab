@@ -43,6 +43,9 @@ src/lib/normalize.js             URL normalization and comparison key
 src/lib/matching.js              glob/regex, lists, decision to act
 src/lib/config.js                defaults, typedefs, validation and import
 src/lib/dedupe.js                choice of the existing tab and the deduplicate-all plan
+src/lib/navigation-action.js     reload rule, action for the navigating tab, what counts as avoided
+src/lib/badge.js                 badge text and colour
+src/lib/log.js                   the one console writer
 src/lib/storage.js               chrome.storage (sync/local)
 src/lib/glob.js, i18n.js
 options/                         options page

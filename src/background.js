@@ -1,7 +1,9 @@
 import { resolveDecision } from './lib/matching.js';
 import { isBlankUrl, isEligibleUrl } from './lib/normalize.js';
-import { canCloseTab, excludedGroupIds, findExistingTab, planDedupeAll } from './lib/dedupe.js';
+import { excludedGroupIds, findExistingTab, planDedupeAll } from './lib/dedupe.js';
 import { createNavigationTracker } from './lib/navigation-tracker.js';
+import { chooseAction, countsAsAvoided, isReload } from './lib/navigation-action.js';
+import { badgeOf } from './lib/badge.js';
 import { log } from './lib/log.js';
 import {
   addAvoided,
@@ -73,26 +75,18 @@ async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }) {
   const tab = await chrome.tabs.get(tabId).catch(warnOn('reading the navigating tab'));
   if (!tab) return;
   const previous = prevUrl ?? tab.url ?? '';
-  // Reloading the page the tab already shows is not opening a duplicate (unless configured so).
-  if (previous === url && !config.actOnReload) return;
+  if (isReload(config, previous, url)) return;
   const [tabs, excluded] = await Promise.all([queryTabs(), queryExcludedGroups()]);
   const target = findExistingTab(config, tabs, tab, url, decision.rule, excluded);
   if (!target) return;
 
-  const action = chooseAction(tab, wasNew || isBlankUrl(previous));
+  const action = chooseAction(config, tab, wasNew || isBlankUrl(previous));
   if (action === 'ignore') return;
 
   await focusTab(target);
   if (action === 'close') await chrome.tabs.remove(tabId).catch(warnOn('closing the duplicate tab'));
   if (action === 'back' && nav.scheduleGoBack(tabId, url, stage) === 'now') goBack(tabId);
-  if (action !== 'focus' || config.countFocusOnly) await addAvoided(1);
-}
-
-/** 'close' | 'back' | 'focus' | 'ignore' for the navigating tab. */
-function chooseAction(tab, isNewTab) {
-  const action = isNewTab ? 'close' : config.inTabNavigation;
-  if (action === 'close' && (!config.closeDuplicate || !canCloseTab(config, tab))) return 'focus';
-  return action;
+  if (countsAsAvoided(config, action)) await addAvoided(1);
 }
 
 // ---------- tab actions ----------
@@ -149,16 +143,10 @@ async function toggleEnabled() {
 
 // ---------- badge, commands, messages ----------
 
-const BADGE_COLOR = '#2563eb';
-const BADGE_COLOR_OFF = '#6b7280';
-
 async function refreshBadge() {
   await ready;
-  const { avoided } = await loadStats();
-  let text = '';
-  if (!config.enabled) text = 'OFF';
-  else if (config.showBadge && avoided > 0) text = avoided > 9999 ? '9999+' : String(avoided);
-  await chrome.action.setBadgeBackgroundColor({ color: config.enabled ? BADGE_COLOR : BADGE_COLOR_OFF });
+  const { text, color } = badgeOf(config, (await loadStats()).avoided);
+  await chrome.action.setBadgeBackgroundColor({ color });
   await chrome.action.setBadgeText({ text });
 }
 
