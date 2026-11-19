@@ -26,9 +26,15 @@ const errorOn = (context) => (cause) => log.error(context, cause);
 // ---------- configuration ----------
 
 let config = null;
-const ready = loadConfig().then((c) => {
-  config = c;
-});
+const nav = createNavigationTracker();
+// Handlers wait for the configuration and for the tabs already open when the worker started:
+// the tracker treats a tab it does not know as newer than any navigation it handles.
+const ready = Promise.all([
+  loadConfig().then((c) => {
+    config = c;
+  }),
+  chrome.tabs.query({}).then((tabs) => nav.seed(tabs)),
+]);
 onConfigChange((c) => {
   config = c;
   refreshBadge().catch(errorOn('refreshing the badge'));
@@ -37,22 +43,21 @@ onStatsChange(() => refreshBadge().catch(errorOn('refreshing the badge')));
 
 // ---------- navigation events ----------
 
-const nav = createNavigationTracker();
-chrome.tabs.query({}).then((tabs) => nav.seed(tabs), errorOn('seeding the open tabs'));
-
 chrome.tabs.onCreated.addListener((tab) => nav.tabCreated(tab));
 chrome.tabs.onRemoved.addListener((tabId) => nav.tabRemoved(tabId));
 
-chrome.webNavigation.onBeforeNavigate.addListener(({ frameId, tabId, url }) => {
+chrome.webNavigation.onBeforeNavigate.addListener(({ frameId, tabId, url, timeStamp }) => {
   if (frameId !== 0) return;
-  handleNavigation(tabId, url, 'before', nav.beforeNavigate(tabId, url)).catch(errorOn('handling a navigation'));
+  const context = nav.beforeNavigate(tabId, url, timeStamp);
+  handleNavigation(tabId, url, 'before', context, nav.startOf(tabId)).catch(errorOn('handling a navigation'));
 });
 
-chrome.webNavigation.onCommitted.addListener(({ frameId, tabId, url, transitionType }) => {
+chrome.webNavigation.onCommitted.addListener(({ frameId, tabId, url, transitionType, timeStamp }) => {
   if (frameId !== 0) return;
-  const { goBack: back, check } = nav.committed(tabId, url, transitionType);
+  const { goBack: back, check } = nav.committed(tabId, url, transitionType, timeStamp);
   if (back) return goBack(tabId);
-  const handled = check ? handleNavigation(tabId, url, 'committed', check) : Promise.resolve();
+  const start = nav.startOf(tabId);
+  const handled = check ? handleNavigation(tabId, url, 'committed', check, start) : Promise.resolve();
   handled.catch(errorOn('handling a navigation')).finally(() => nav.settled(tabId));
 });
 
@@ -62,9 +67,10 @@ chrome.webNavigation.onErrorOccurred.addListener(({ frameId, tabId }) => {
 
 /**
  * Decides and executes what to do with a main-frame navigation of `tabId` to `url`.
- * `stage` is 'before' (onBeforeNavigate) or 'committed' (onCommitted re-check).
+ * `stage` is 'before' (onBeforeNavigate) or 'committed' (onCommitted re-check). `start` is when
+ * the navigation started (`nav.startOf`, read when its event fired).
  */
-async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }) {
+async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }, start) {
   await ready;
   if (nav.shouldSkip(tabId)) return;
   if (!config.enabled || !isEligibleUrl(url)) return;
@@ -77,7 +83,9 @@ async function handleNavigation(tabId, url, stage, { wasNew, prevUrl }) {
   const previous = prevUrl ?? tab.url ?? '';
   if (isReload(config, previous, url)) return;
   const [tabs, excluded] = await Promise.all([queryTabs(), queryExcludedGroups()]);
-  const target = findExistingTab(config, tabs, tab, url, decision.rule, excluded);
+  // A tab that started navigating after this navigation is its duplicate, not its original.
+  const earlier = tabs.filter((t) => !nav.navigatedAfter(t.id, start));
+  const target = findExistingTab(config, earlier, tab, url, decision.rule, excluded);
   if (!target) return;
 
   const action = chooseAction(config, tab, wasNew || isBlankUrl(previous));

@@ -12,6 +12,10 @@ export function createNavigationTracker({ now = Date.now } = {}) {
   const pendingBack = new Set(); // tabs that must go back as soon as the duplicate commits
   const skipUntil = new Map(); // tabId -> deadline; the tab is performing a goBack we triggered
   const lastBefore = new Map(); // tabId -> url seen in onBeforeNavigate
+  // tabId -> time (ms since epoch) its latest navigation started. Times, not arrival order: Chrome
+  // does not order events across APIs, so a tab's onBeforeNavigate can arrive after the onCreated
+  // of a tab opened later.
+  const startedAt = new Map();
 
   return {
     /** Seed committed URLs from the tabs that already exist (service worker start). */
@@ -22,6 +26,9 @@ export function createNavigationTracker({ now = Date.now } = {}) {
     tabCreated(tab) {
       newTabs.add(tab.id);
       committedUrl.set(tab.id, tab.url || '');
+      // onCreated carries no time; its arrival is a late bound. A tab created with a URL can be
+      // listed by chrome.tabs.query before its onBeforeNavigate arrives.
+      startedAt.set(tab.id, now());
     },
 
     tabRemoved(tabId) {
@@ -30,14 +37,16 @@ export function createNavigationTracker({ now = Date.now } = {}) {
       pendingBack.delete(tabId);
       skipUntil.delete(tabId);
       lastBefore.delete(tabId);
+      startedAt.delete(tabId);
     },
 
     /**
      * onBeforeNavigate (main frame). Returns the context to evaluate the navigation with.
      * Must be called synchronously from the event: onCommitted may arrive before any await.
      */
-    beforeNavigate(tabId, url) {
+    beforeNavigate(tabId, url, timeStamp = now()) {
       lastBefore.set(tabId, url);
+      startedAt.set(tabId, timeStamp);
       return { wasNew: newTabs.has(tabId), prevUrl: committedUrl.get(tabId) };
     },
 
@@ -46,7 +55,7 @@ export function createNavigationTracker({ now = Date.now } = {}) {
      * or { check: context } when the committed URL must be evaluated (redirect, or a navigation
      * that never fired onBeforeNavigate: prerender activation, service worker restarted), or {}.
      */
-    committed(tabId, url, transitionType) {
+    committed(tabId, url, transitionType, timeStamp = now()) {
       const prevUrl = committedUrl.get(tabId);
       committedUrl.set(tabId, url);
       if (pendingBack.delete(tabId)) {
@@ -55,8 +64,27 @@ export function createNavigationTracker({ now = Date.now } = {}) {
       }
       const seenBefore = lastBefore.get(tabId);
       lastBefore.delete(tabId);
+      if (seenBefore === undefined) startedAt.set(tabId, timeStamp);
       const needsCheck = seenBefore !== url && transitionType !== 'reload';
       return needsCheck ? { check: { wasNew: newTabs.has(tabId), prevUrl } } : {};
+    },
+
+    /**
+     * When the tab's latest navigation started (0: none seen, such as a seeded tab). Read it
+     * synchronously from the event, before any await, to identify that navigation later.
+     */
+    startOf(tabId) {
+      return startedAt.get(tabId) ?? 0;
+    },
+
+    /**
+     * Whether the tab started navigating after `time`, the start of the navigation being handled.
+     * Such a tab is the duplicate of that navigation, never its original, however late the worker
+     * handles it. A tab the tracker does not know yet (its onCreated still queued) is newer too.
+     */
+    navigatedAfter(tabId, time) {
+      if (!committedUrl.has(tabId)) return true;
+      return (startedAt.get(tabId) ?? 0) > time;
     },
 
     /** Call once the committed navigation has been fully handled. */

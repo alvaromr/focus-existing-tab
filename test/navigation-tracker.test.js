@@ -117,3 +117,63 @@ test('tabRemoved forgets everything about the tab', () => {
   assert.deepEqual(t.beforeNavigate(1, A), { wasNew: false, prevUrl: undefined });
   assert.deepEqual(t.committed(1, A, 'typed'), {});
 });
+
+test('a tab that started navigating later is never the original of an earlier navigation', () => {
+  // Two new tabs open the same page; the service worker handles the first one only after the
+  // second exists. The second is the duplicate, so it must not be matched by the first.
+  const t = tracker(1000);
+  t.tabCreated({ id: 1, url: '' });
+  t.beforeNavigate(1, A, 1001);
+  t.advance(500);
+  t.tabCreated({ id: 2, url: '' });
+  t.beforeNavigate(2, A, 1600);
+  assert.equal(t.startOf(1), 1001);
+  assert.equal(t.navigatedAfter(2, t.startOf(1)), true);
+  assert.equal(t.navigatedAfter(1, t.startOf(2)), false);
+  assert.equal(t.navigatedAfter(1, t.startOf(1)), false);
+});
+
+test('events of different APIs may arrive out of order: times decide, not arrival', () => {
+  // Tab 2 is created (onCreated arrives at 1500) after tab 1 started navigating at 1001, but
+  // tab 1's onBeforeNavigate reaches the worker only after tab 2's onCreated.
+  const t = tracker(1000);
+  t.tabCreated({ id: 1, url: '' });
+  t.advance(500);
+  t.tabCreated({ id: 2, url: '' });
+  t.beforeNavigate(1, A, 1001);
+  assert.equal(t.navigatedAfter(2, t.startOf(1)), true);
+  assert.equal(t.navigatedAfter(1, t.startOf(2)), false);
+});
+
+test('seeded tabs count as the oldest; tabs whose events have not arrived yet as newer', () => {
+  const t = tracker(1000);
+  t.seed([{ id: 1, url: B }]);
+  t.tabCreated({ id: 2, url: '' });
+  t.beforeNavigate(2, A, 1000);
+  const start = t.startOf(2);
+  assert.equal(t.startOf(1), 0);
+  assert.equal(t.navigatedAfter(1, start), false);
+  // Tab 3 exists for chrome.tabs.query, but its onCreated has not reached the worker yet.
+  assert.equal(t.navigatedAfter(3, start), true);
+  t.tabRemoved(1);
+  assert.equal(t.navigatedAfter(1, start), true);
+});
+
+test('a commit without onBeforeNavigate starts a navigation at its own time; with one, keeps it', () => {
+  const t = tracker(1000);
+  t.seed([{ id: 1, url: B }]);
+  t.committed(1, A, 'link', 1200);
+  assert.equal(t.startOf(1), 1200);
+  t.beforeNavigate(3, A, 1300);
+  t.committed(3, A, 'link', 1400);
+  assert.equal(t.startOf(3), 1300);
+});
+
+test('without an event time, the tracker clock stands in', () => {
+  const t = tracker(1000);
+  t.beforeNavigate(1, A);
+  assert.equal(t.startOf(1), 1000);
+  t.advance(50);
+  t.committed(2, A, 'link');
+  assert.equal(t.startOf(2), 1050);
+});
