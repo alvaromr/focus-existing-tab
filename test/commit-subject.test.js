@@ -28,6 +28,6 @@ test('a subject over 72 characters is refused, and 72 pass', () => {
 });
 
 test('the release commit subject follows the rule', () => {
-  assert.equal(releaseSubject('1.2.3'), 'chore: release v1.2.3');
+  assert.equal(releaseSubject('1.2.3'), 'chore: v1.2.3');
   assert.deepEqual(subjectProblems(releaseSubject('10.20.30')), []);
 });

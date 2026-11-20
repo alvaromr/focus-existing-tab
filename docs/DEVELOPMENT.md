@@ -182,7 +182,7 @@ the Chrome Web Store.
 1. Record changes under `## [Unreleased]` in [CHANGELOG.md](../CHANGELOG.md) as you go.
 2. With a clean tree and green CI: `pnpm release patch|minor|major` (or `x.y.z`). The script runs
    `pnpm verify` and `pnpm smoke:package`, then bumps the version in both files, dates the
-   changelog section, commits `chore: release vX.Y.Z` and creates the annotated tag `vX.Y.Z`.
+   changelog section, commits `chore: vX.Y.Z` and creates the annotated tag `vX.Y.Z`.
 3. `git push --follow-tags`. The `release.yml` workflow checks that the tag matches the manifest,
    runs `pnpm check` and `pnpm smoke:package`, and publishes the GitHub Release with the zip and
    the changelog notes (`scripts/release-notes.sh`).

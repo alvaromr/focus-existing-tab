@@ -23,4 +23,4 @@ export function subjectProblems(subject) {
 }
 
 /** @param {string} version x.y.z */
-export const releaseSubject = (version) => `chore: release v${version}`;
+export const releaseSubject = (version) => `chore: v${version}`;
