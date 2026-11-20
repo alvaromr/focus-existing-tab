@@ -27,10 +27,16 @@ const next =
 if (!/^\d+\.\d+\.\d+$/.test(next)) throw new Error(`invalid version: ${next}`);
 if (next === manifest.version) throw new Error(`already at ${next}`);
 
-manifest.version = next;
-pkg.version = next;
-writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+// Replace only the version line: re-serializing the JSON would undo Prettier's layout.
+/** @param {string} path @param {string} current */
+const bump = (path, current) => {
+  const text = readFileSync(path, 'utf8');
+  const line = `"version": "${current}"`;
+  if (!text.includes(line)) throw new Error(`${path}: no ${line}`);
+  writeFileSync(path, text.replace(line, `"version": "${next}"`));
+};
+bump(manifestPath, manifest.version);
+bump(packagePath, pkg.version);
 
 const today = new Date().toISOString().slice(0, 10);
 const repo = pkg.repository?.url?.replace(/\.git$/, '') || 'https://github.com/alvaromr/focus-existing-tab';
