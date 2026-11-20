@@ -10,7 +10,7 @@ const cfg = (overrides) => normalizeConfig(overrides).config;
 /** @param {RegExp} re @param {string} text @returns {string} the first group; throws when absent */
 const capture = (re, text) => {
   const m = re.exec(text);
-  if (!m) throw new Error(`${re} not found`);
+  assert.ok(m, `${re} not found`);
   return m[1];
 };
 
