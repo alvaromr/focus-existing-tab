@@ -48,12 +48,13 @@ p {
 }
 .row.select {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  max-width: 720px;
+  max-width: 840px;
 }
 .row.select > span {
-  flex: 1;
+  flex: 1 1 200px;
 }
 fieldset {
   border: 0;
@@ -94,9 +95,13 @@ textarea {
   font-size: 13px;
   resize: vertical;
 }
+/* Wide enough for the longest option (Spanish incognito policy), so a closed select shows it whole;
+   below the label when the row is too narrow for both, keeping room for the help button (34px:
+   the gap, its margin and its width). */
 .row.select select,
 .row.select textarea {
-  width: 360px;
+  width: 488px;
+  max-width: calc(100% - 34px);
   flex: 0 0 auto;
 }
 button.help {

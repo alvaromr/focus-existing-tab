@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+### Fixed
+
+- The options page shows long choices whole in their closed drop-downs (some Spanish ones were cut
+  off), and no longer scrolls sideways in a narrow window.
+
 ## [1.1.0] - 2026-11-20
 
 ### Added
