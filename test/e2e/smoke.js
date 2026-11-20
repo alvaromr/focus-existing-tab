@@ -70,10 +70,12 @@ const tabsSeen = async () =>
 /** @param {string} sessionId @param {string} expression */
 const read = (sessionId, expression) => evaluate(sessionId, expression).catch(() => undefined);
 /** @param {string} sessionId */
+// A new target starts on a complete about:blank before navigating to its URL: wait for a page of
+// the test server, or a slow machine moves on before the navigation has even started.
 const loaded = (sessionId) =>
   waitFor(
-    () => read(sessionId, 'document.readyState'),
-    (state) => state === 'complete',
+    () => read(sessionId, 'document.readyState + " " + location.origin'),
+    (state) => state === `complete ${BASE}`,
   );
 
 try {
