@@ -30,7 +30,8 @@ All are `package.json` scripts; the full list with one line each is in
   rule no test pins can silently change.
 - Never swallow an error: log it through `src/lib/log.js`. — Silent failures become wrong behaviour
   nobody looks for.
-- Conventional Commits, subject of at most 72 characters (commit-msg hook). — Readable history.
+- Conventional Commits without a scope (`type: summary`, never `type(scope): summary`), subject of
+  at most 72 characters (commit-msg hook). — Readable, uniform history.
 - Tags are immutable (hooks refuse moving or deleting them). — A version names one artifact forever.
 - Every change updates the docs, changelog, UI strings (both locales) and tests it affects, in the
   same commit. — The next change is planned from what the files say.

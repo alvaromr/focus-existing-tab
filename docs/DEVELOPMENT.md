@@ -63,6 +63,7 @@ popup/                           popup
 test/*.test.js                   unit tests
 test/e2e/smoke.js                end-to-end test in headless Chromium
 scripts/lib/cdp.js               headless Chromium launcher + CDP client (e2e and screenshots)
+scripts/lib/commit-subject.js    commit subject rule (commit-msg hook and release commit)
 scripts/screenshots.js           1280×800 store screenshots
 scripts/package.sh               builds the zip
 scripts/smoke-package.sh         e2e against the unpacked zip
@@ -106,7 +107,8 @@ accepts, and the e2e in the oldest Chrome that `minimum_chrome_version` accepts 
 `scripts/hooks/*.js`:
 
 - `pre-commit`: when something is staged, gitleaks over the staged changes, then the gate.
-- `commit-msg`: Conventional Commits, subject of at most 72 characters.
+- `commit-msg`: Conventional Commits without a scope in parentheses, subject of at most 72
+  characters (the rule is in `scripts/lib/commit-subject.js`, shared with `pnpm release`).
 - `pre-push`: refuses moving or deleting a published tag, then runs `pnpm verify`.
 - `reference-transaction`: refuses moving or deleting a local tag. `git update-ref -d <tag> <value>`
   stays allowed because `git pack-refs` deletes loose tags that way.
@@ -180,7 +182,7 @@ the Chrome Web Store.
 1. Record changes under `## [Unreleased]` in [CHANGELOG.md](../CHANGELOG.md) as you go.
 2. With a clean tree and green CI: `pnpm release patch|minor|major` (or `x.y.z`). The script runs
    `pnpm verify` and `pnpm smoke:package`, then bumps the version in both files, dates the
-   changelog section, commits `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`.
+   changelog section, commits `chore: release vX.Y.Z` and creates the annotated tag `vX.Y.Z`.
 3. `git push --follow-tags`. The `release.yml` workflow checks that the tag matches the manifest,
    runs `pnpm check` and `pnpm smoke:package`, and publishes the GitHub Release with the zip and
    the changelog notes (`scripts/release-notes.sh`).

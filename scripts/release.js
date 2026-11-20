@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO_DIR } from './lib/cdp.js';
+import { releaseSubject } from './lib/commit-subject.js';
 
 const arg = process.argv[2];
 if (!arg) throw new Error('usage: pnpm release patch|minor|major|<x.y.z>');
@@ -51,6 +52,6 @@ changelog = changelog
 writeFileSync(changelogPath, changelog);
 
 git('add', 'manifest.json', 'package.json', 'CHANGELOG.md');
-git('commit', '-m', `chore(release): v${next}`);
+git('commit', '-m', releaseSubject(next));
 git('tag', '-a', `v${next}`, '-m', `v${next}`);
 console.log(`v${next} committed and tagged. Publish with: git push --follow-tags`);
