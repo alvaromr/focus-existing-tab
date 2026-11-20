@@ -77,8 +77,8 @@ store/                           Web Store listing: copy, checklist and screensh
 docs/                            this documentation
 ```
 
-All decision logic lives in `src/lib/*` without touching `chrome.*`, and that is where coverage is
-measured. `background.js`, `src/chrome/*`, `options.js` and `popup.js` depend on `chrome.*`: the
+All decision logic lives in `src/lib/*` without touching `chrome.*`, and coverage is measured over
+it and the other modules the unit tests load (`scripts/lib/commit-subject.js`). `background.js`, `src/chrome/*`, `options.js` and `popup.js` depend on `chrome.*`: the
 e2e covers them (without a metric) and the type check validates them against `@types/chrome`.
 
 ## Tests
