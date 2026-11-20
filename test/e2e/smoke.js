@@ -51,6 +51,21 @@ async function waitFor(probe, done, timeout = 10_000) {
     await sleep(50);
   }
 }
+// Every tab as the extension sees it, and the service worker's warnings: the detail of a failed check.
+const tabsSeen = async () =>
+  JSON.stringify({
+    tabs: await evaluate(
+      swSession,
+      `chrome.tabs.query({}).then((ts) => ts.map((t) => [t.id, t.windowId, t.groupId, t.status, t.url || t.pendingUrl]))`,
+    ),
+    warnings: events
+      .filter(
+        (e) => e.sessionId === swSession && e.method === 'Runtime.consoleAPICalled' && e.params.type === 'warning',
+      )
+      .map((e) =>
+        e.params.args?.map((/** @type {{ value?: unknown, description?: string }} */ a) => a.value ?? a.description),
+      ),
+  });
 // While a page is navigating its execution context can vanish; the poll then simply retries.
 /** @param {string} sessionId @param {string} expression */
 const read = (sessionId, expression) => evaluate(sessionId, expression).catch(() => undefined);
@@ -101,7 +116,7 @@ try {
     async () => (await pages()).find((t) => t.targetId === b)?.url,
     (url) => url === `${BASE}/b`,
   );
-  check('in-tab duplicate went back', bUrl === `${BASE}/b`, bUrl);
+  check('in-tab duplicate went back', bUrl === `${BASE}/b`, bUrl === `${BASE}/b` ? bUrl : await tabsSeen());
   check('tab count after in-tab back', (await countPages(equals(`${BASE}/a`))) === 1);
 
   // 5. Reload of an existing page is not treated as a duplicate.
@@ -162,11 +177,8 @@ try {
     () => evaluate(popupSession, 'document.getElementById("message").textContent'),
     (text) => /^2 /.test(text),
   );
-  check(
-    'dedupeAll closes remaining duplicates',
-    (await countPages(startsWith(`${BASE}/c`))) === 1 && /^2 /.test(popupMsg),
-    popupMsg,
-  );
+  const dedupedAll = (await countPages(startsWith(`${BASE}/c`))) === 1 && /^2 /.test(popupMsg);
+  check('dedupeAll closes remaining duplicates', dedupedAll, dedupedAll ? popupMsg : `${popupMsg} ${await tabsSeen()}`);
 
   // 9. Options page loads, validates and saves.
   const optSession = await attach(await open(`chrome-extension://${extId}/options/options.html`));
