@@ -5,6 +5,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-20
+
 ### Fixed
 
 - The options page shows long choices whole in their closed drop-downs (some Spanish ones were cut
@@ -55,6 +57,7 @@ First release.
 - Options page with URL tester, contextual help and JSON import/export.
 - UI in English and Spanish.
 
-[Unreleased]: https://github.com/alvaromr/focus-existing-tab/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/alvaromr/focus-existing-tab/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.1.0
 [1.0.0]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.0.0

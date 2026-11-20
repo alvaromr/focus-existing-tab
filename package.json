@@ -1,6 +1,6 @@
 {
   "name": "focus-existing-tab",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Chrome MV3 extension: focus an already open tab instead of loading the same URL twice.",
   "private": true,
   "type": "module",
