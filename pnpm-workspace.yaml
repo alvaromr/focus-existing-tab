@@ -10,7 +10,7 @@ overrides:
   typed-rest-client>qs: 6.16.2
 auditConfig:
   ignoreGhsas:
-    # minimatch < 11.0.1 globparts DoS, reached only through ESLint's own config globs (dev-only,
-    # never in the shipped zip). The fix, @eslint/config-array 0.23.6, passes minimumReleaseAge on
-    # 2026-11-20: update it then and remove this entry.
+    # minimatch < 11.0.1 globparts DoS, reached only through @stryker-mutator/core, which pins
+    # minimatch ~10.2.4 (dev-only, runs on local code, never in the shipped zip). Remove this entry
+    # once Stryker ships with minimatch >= 11.0.1.
     - GHSA-g3hv-75wg-m249
