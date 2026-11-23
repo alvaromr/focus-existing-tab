@@ -183,7 +183,7 @@ Review of the full code, last on 2026-11-19 (adds the `tabGroups` permission, re
 - **User regexes**: compiled over the user's own URLs; a pathological regex can only slow down their
   own navigations. The `g`/`y` flags are dropped.
 - **Data**: URLs are only read in memory during a navigation. See [PRIVACY.md](../PRIVACY.md).
-- **Supply chain**: pnpm with dependency scripts blocked, a 7-day `minimumReleaseAge` and
+- **Supply chain**: pnpm with dependency scripts blocked, a 4-day `minimumReleaseAge` and
   `trustPolicy: no-downgrade`; the shipped extension includes no dependency at all.
 
 ## Versioning and releases
