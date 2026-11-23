@@ -29,8 +29,7 @@ const tests = readdirSync(join(REPO_DIR, 'test'))
 /** @type {Record<string, string[]>} */
 const inputs = Object.fromEntries(tests.map((test) => [test, inputsOf(test, read)]));
 const fingerprint = fingerprintOf({
-  configText: read('stryker.config.json'),
-  strykerVersion: JSON.parse(read('node_modules/@stryker-mutator/core/package.json')).version,
+  config: JSON.parse(read('stryker.config.json')),
   nodeVersion: process.versions.node,
 });
 const paths = [...new Set(Object.values(inputs).flat())];

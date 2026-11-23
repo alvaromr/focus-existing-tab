@@ -21,10 +21,12 @@ export const SCOPE = 'reports/mutation-scope.json';
 export const hashOf = (text) => createHash('sha256').update(text).digest('hex');
 
 const IMPORT = /^import[^'"]*['"](\.[^'"]+)['"]/gm;
+const PACKAGE = /^import[^'"]*['"]((?!node:)[^.'"][^'"]*)['"]/gm;
 const READ = /new URL\(['"](\.[^'"]+)['"], import\.meta\.url\)/g;
 
 /**
- * A test's inputs: itself, its relative imports (transitively) and the files it reads.
+ * A test's inputs: itself, its relative imports (transitively) and the files it reads. A package
+ * import throws: its version is not among the inputs, so a dependency upgrade would go unseen.
  * @param {string} test path from the repository root
  * @param {(path: string) => string} read
  */
@@ -33,6 +35,9 @@ export const inputsOf = (test, read) => {
   const queue = [test];
   for (let file = queue.pop(); file; file = queue.pop()) {
     const text = read(file);
+    for (const [, name] of text.matchAll(PACKAGE)) {
+      throw new Error(`${file} imports the package ${name}; scripts/lib/mutation-scope.js does not track its version`);
+    }
     for (const [, spec] of [...text.matchAll(IMPORT), ...text.matchAll(READ)]) {
       const path = normalize(join(dirname(file), spec));
       if (seen.has(path)) continue;
@@ -43,16 +48,25 @@ export const inputsOf = (test, read) => {
   return [...seen].sort();
 };
 
+// Stryker config keys that change neither which mutants exist nor how their tests run. `mutate`
+// is among them because the incremental mode identifies each mutant by file, mutator, replacement
+// and location: mutants new to the set run, and mutants gone from it are dropped. For the same
+// reason the Stryker version is not in the fingerprint.
+const INERT_CONFIG = new Set(['$schema', 'mutate', 'reporters', 'htmlReporter', 'tempDirName', 'thresholds']);
+
 /**
- * What every mutant depends on: a change here invalidates every previous result.
- * @param {{ configText: string, strykerVersion: string, nodeVersion: string }} sources
+ * What every mutant depends on: how the tests run (any Stryker config key not known to be inert)
+ * and the Node major they run on. A change here invalidates every previous result.
+ * @param {{ config: Record<string, unknown>, nodeVersion: string }} sources
  * @returns {Fingerprint}
  */
-export const fingerprintOf = ({ configText, strykerVersion, nodeVersion }) => ({
-  'stryker.config.json': hashOf(configText),
-  '@stryker-mutator/core': strykerVersion,
-  node: nodeVersion.split('.')[0],
-});
+export const fingerprintOf = ({ config, nodeVersion }) => {
+  const keys = Object.keys(config).filter((key) => !INERT_CONFIG.has(key));
+  return {
+    'stryker.config.json': hashOf(JSON.stringify(keys.sort().map((key) => [key, config[key]]))),
+    node: nodeVersion.split('.')[0],
+  };
+};
 
 /**
  * Why every mutant must run, or '' when a scoped run is enough.

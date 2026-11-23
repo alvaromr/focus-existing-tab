@@ -61,6 +61,14 @@ test('an import cycle is followed once', () => {
   assert.deepEqual(inputsOf('test/x.test.js', reader(files)), ['src/lib/x.js', 'src/lib/y.js', 'test/x.test.js']);
 });
 
+test('a package import is refused, since its version is not among the inputs', () => {
+  const files = { 'test/p.test.js': "import { test } from 'node:test';\nimport x from 'some-package';" };
+  assert.throws(
+    () => inputsOf('test/p.test.js', reader(files)),
+    /^Error: test\/p\.test\.js imports the package some-package/,
+  );
+});
+
 test('a full run is due when asked with --full or with no previous result, whatever else', () => {
   const fingerprint = { node: '22' };
   const previous = { fingerprint, inputs: {}, hashes: {} };
@@ -80,8 +88,54 @@ test('a full run is due when the fingerprint changed, naming what changed', () =
   );
 });
 
-test('the fingerprint holds the Node major', () => {
-  assert.equal(fingerprintOf({ configText: '{}', strykerVersion: '10.1.1', nodeVersion: '22.11.0' }).node, '22');
+const CONFIG = {
+  $schema: './node_modules/@stryker-mutator/core/schema/stryker-schema.json',
+  mutate: ['src/lib/**/*.js'],
+  testRunner: 'command',
+  commandRunner: { command: "node --test 'test/**/*.test.js'" },
+  coverageAnalysis: 'off',
+  timeoutFactor: 10,
+  timeoutMS: 2000,
+  reporters: ['clear-text'],
+  htmlReporter: { fileName: 'reports/mutation/index.html' },
+  tempDirName: '.stryker-tmp',
+  thresholds: { high: 100, low: 95, break: 100 },
+};
+const fingerprint = (config = CONFIG, nodeVersion = '22.11.0') => fingerprintOf({ config, nodeVersion });
+
+test('the fingerprint holds how the tests run and the Node major, not the Stryker version', () => {
+  assert.deepEqual(Object.keys(fingerprint()), ['stryker.config.json', 'node']);
+  assert.equal(fingerprint().node, '22');
+  assert.deepEqual(fingerprint(CONFIG, '22.20.1'), fingerprint());
+  assert.notDeepEqual(fingerprint(CONFIG, '24.0.0'), fingerprint());
+});
+
+test('config that changes neither which mutants exist nor how their tests run leaves the fingerprint', () => {
+  const { thresholds, ...rest } = CONFIG;
+  for (const config of [
+    { ...CONFIG, $schema: 'other.json' },
+    { ...CONFIG, mutate: ['src/lib/**/*.js', 'src/ui/**/*.js'] },
+    { ...CONFIG, reporters: ['html'] },
+    { ...CONFIG, htmlReporter: { fileName: 'other.html' } },
+    { ...CONFIG, tempDirName: '.tmp' },
+    { ...CONFIG, thresholds: { high: 90, low: 80, break: 80 } },
+    { thresholds, ...rest },
+  ]) {
+    assert.deepEqual(fingerprint(config), fingerprint(), JSON.stringify(config));
+  }
+});
+
+test('config that changes how the tests run changes the fingerprint, an unknown key too', () => {
+  for (const config of [
+    { ...CONFIG, testRunner: 'mocha' },
+    { ...CONFIG, commandRunner: { command: 'node --test' } },
+    { ...CONFIG, coverageAnalysis: 'perTest' },
+    { ...CONFIG, timeoutFactor: 20 },
+    { ...CONFIG, timeoutMS: 5000 },
+    { ...CONFIG, plugins: ['x'] },
+  ]) {
+    assert.notDeepEqual(fingerprint(config), fingerprint(), JSON.stringify(config));
+  }
 });
 
 test('nothing changed re-runs nothing', () => {

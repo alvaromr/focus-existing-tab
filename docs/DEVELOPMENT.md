@@ -31,7 +31,7 @@ pnpm typecheck    # tsc --checkJs in strict mode (via JSDoc): the extension agai
 pnpm test         # unit tests (native node --test runner)
 pnpm coverage     # unit tests with the coverage thresholds (100%)
 pnpm mutation     # Stryker over src/lib, scoped to what changed (see Tests); report in reports/mutation/
-pnpm mutation --full  # every mutant, only when asked or for a stated reason
+pnpm mutation --full  # every mutant, only when the owner asks
 pnpm test:e2e     # real run in headless Chromium
 pnpm screenshots  # regenerate store/screenshots/*.png (same browser as the e2e)
 pnpm package      # dist/focus-existing-tab-<version>.zip
@@ -98,10 +98,17 @@ e2e covers them (without a metric) and the type check validates them against `@t
     (`reports/stryker-incremental.json`) reuses the result of every mutant in unchanged source.
     Stryker's command runner cannot see test changes, so the script also re-runs the modules a
     unit test reaches (its imports, transitively) when that test, a module it imports or a file it
-    reads changed (`reports/mutation-scope.json`).
+    reads changed (`reports/mutation-scope.json`). A shared test helper or fixture thus re-runs only
+    the modules reached by the tests that use it. Unit tests import no packages (the script refuses
+    one, since it does not track their versions), so the lockfile, `package.json` and
+    `pnpm-workspace.yaml` re-run nothing.
   - Full run (every mutant, reason printed): with `pnpm mutation --full`, when there is no previous
-    result (a fresh checkout or worktree), or when `stryker.config.json`, the Stryker version or
-    the Node major changed. A release, the pre-push hook or a score are never a reason for one.
+    result (a fresh checkout or worktree), or when how the tests run changed: a key of
+    `stryker.config.json` other than `$schema`, `mutate`, `reporters`, `htmlReporter`,
+    `tempDirName` and `thresholds`, or the Node major. Those keys and the Stryker version re-run
+    nothing: Stryker identifies each mutant by file, mutator, replacement and location, so mutants
+    new to the set run and the ones gone from it are dropped. A release, a version bump, the
+    pre-push hook or a score are never a reason for a full run.
   - Bounded: half the cores (`--concurrency`), `nice -n 10`, one test file at a time per mutant
     (`--test-concurrency=1`), and a per-mutant timeout of about 13 times one test run (0.6 s ×
     `timeoutFactor` 10 + `timeoutMS` 2000).
