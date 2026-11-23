@@ -9,7 +9,7 @@
     "test": "node --test 'test/**/*.test.js'",
     "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 'test/**/*.test.js'",
     "test:e2e": "node test/e2e/smoke.js",
-    "mutation": "nice -n 10 stryker run",
+    "mutation": "node scripts/mutation.js",
     "lint": "eslint . && prettier --check . && shellcheck scripts/*.sh scripts/ci/*.sh .githooks/*",
     "format": "prettier --write .",
     "fix": "eslint --fix . && prettier --write . && pnpm check",

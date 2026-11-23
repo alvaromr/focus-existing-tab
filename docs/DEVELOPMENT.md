@@ -30,7 +30,8 @@ pnpm typecheck    # tsc --checkJs in strict mode (via JSDoc): the extension agai
                   # types (jsconfig.json), tests and scripts against Node's too (jsconfig.tools.json)
 pnpm test         # unit tests (native node --test runner)
 pnpm coverage     # unit tests with the coverage thresholds (100%)
-pnpm mutation     # Stryker over src/lib (stryker.config.json); report in reports/mutation/
+pnpm mutation     # Stryker over src/lib, scoped to what changed (see Tests); report in reports/mutation/
+pnpm mutation --full  # every mutant, only when asked or for a stated reason
 pnpm test:e2e     # real run in headless Chromium
 pnpm screenshots  # regenerate store/screenshots/*.png (same browser as the e2e)
 pnpm package      # dist/focus-existing-tab-<version>.zip
@@ -72,6 +73,7 @@ scripts/hooks/                   git hooks (installed through .githooks/)
 scripts/check-file-size.js       gate guard: 400-line cap per code file
 scripts/ci/install-gitleaks.sh   pinned gitleaks for the CI runners
 scripts/release.js               version bump, changelog, commit and tag
+scripts/mutation.js              scoped mutation run (Stryker incremental, bounded)
 scripts/make-icons.js            generates the PNG icons (no dependencies)
 store/                           Web Store listing: copy, checklist and screenshots
 docs/                            this documentation
@@ -89,6 +91,17 @@ e2e covers them (without a metric) and the type check validates them against `@t
 - **Mutation** (`pnpm mutation`): Stryker mutates `src/lib` and runs the unit suite per mutant; the
   run fails below a 100% score. An equivalent mutant (one no test can tell apart, such as a cache
   being skipped) is disabled in place with a `// Stryker disable` comment stating why.
+  - Scoped by default (`scripts/mutation.js`): Stryker's incremental mode
+    (`reports/stryker-incremental.json`) reuses the result of every mutant in unchanged source.
+    Stryker's command runner cannot see test changes, so the script also re-runs the modules a
+    unit test reaches (its imports, transitively) when that test, a module it imports or a file it
+    reads changed (`reports/mutation-scope.json`).
+  - Full run (every mutant, reason printed): with `pnpm mutation --full`, when there is no previous
+    result (a fresh checkout or worktree), or when `stryker.config.json`, the Stryker version or
+    the Node major changed. A release, the pre-push hook or a score are never a reason for one.
+  - Bounded: half the cores (`--concurrency`), `nice -n 10`, one test file at a time per mutant
+    (`--test-concurrency=1`), and a per-mutant timeout of about 13 times one test run (0.6 s ×
+    `timeoutFactor` 10 + `timeoutMS` 2000).
 - **E2E** (`test/e2e/smoke.js`): launches a headless browser with a temporary profile, loads the
   extension and checks its scenarios over the DevTools protocol (duplicate tab, redirect, in-tab
   navigation, reload, badge, popup, options, absence of errors). It finds Brave/Chromium in the

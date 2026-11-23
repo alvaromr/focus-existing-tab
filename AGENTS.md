@@ -10,7 +10,8 @@ All are `package.json` scripts; the full list with one line each is in
 
 - Gate: `pnpm check` (lint, type check, secret scan and file-size cap, unit tests at 100% coverage).
   Fix: `pnpm fix`.
-- Before push: `pnpm verify` (gate, audit, mutation, e2e), run by the pre-push hook.
+- Before push: `pnpm verify` (gate, audit, scoped mutation, e2e), run by the pre-push hook. Full
+  mutation run (`pnpm mutation --full`) only when asked or for a stated reason.
 - Run: load the folder as an unpacked extension in `chrome://extensions`; build the zip with
   `pnpm package`; release with `pnpm release` (see docs/DEVELOPMENT.md, "Versioning and releases").
 
