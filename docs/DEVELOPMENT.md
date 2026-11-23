@@ -107,13 +107,13 @@ e2e covers them (without a metric) and the type check validates them against `@t
 - **E2E** (`test/e2e/`): each suite launches a headless browser with a temporary profile, loads the
   extension and checks its scenarios over the DevTools protocol. `smoke.js`: duplicate tab,
   redirect, in-tab navigation, reload, excluded groups, badge, popup, options. `settings.js`: one
-  scenario per setting or browser context, from the default configuration (another window,
-  blacklist and whitelist mode, pinned tabs, focus only, ignored parameters, in-tab "Only focus"
-  and "Do nothing", priority, tab groups, internal pages, help, URL tester, language). Both check
-  that no page or the service worker logged an error. A headless browser reports every window as
-  focused, so `settings.js` reads the window the extension focuses from its `windows.update`
-  calls. It finds Brave/Chromium in the
-  usual locations; otherwise `CHROME=/path/to/binary`. `CHROME_ARGS` adds flags (CI passes
+  scenario per setting or browser context, from the default configuration (another, minimized
+  window, blacklist and whitelist mode, pinned tabs, focus only, ignored parameters, in-tab "Only
+  focus" and "Do nothing", priority, tab groups, internal pages, shortcuts registered, help, URL
+  tester, export and import, language). Both check that no page or the service worker logged an
+  error. A headless browser reports every window as focused, so `settings.js` reads the window the
+  extension focuses from its `windows.update` calls. It finds Brave/Chromium in the usual
+  locations; otherwise `CHROME=/path/to/binary`. `CHROME_ARGS` adds flags (CI passes
   `--no-sandbox`). Chrome for Testing: `pnpm dlx @puppeteer/browsers install chrome@stable`.
 
 ## CI
@@ -140,15 +140,13 @@ accepts, and the e2e in the oldest Chrome that `minimum_chrome_version` accepts 
 browser cannot show; try it by hand, with the extension loaded in developer mode, when a change
 touches it:
 
-1. **Window to the front**: with example.com open in a second, minimized window, open it again in
-   the first one: the second window is restored and comes to the front.
-2. **Shortcut**: with example.com open three times while the extension is disabled, enable it and
-   press `Alt+Shift+D`: one tab remains.
-3. **Import/export**: export the JSON, change something, import the file and save. Import a JSON
-   with an invalid regex (`{"blacklist":[{"pattern":"(","type":"regex"}]}`) and check the warning.
-4. **Claude Code**: open example.com in a normal tab, then ask Claude Code to open example.com: its
-   tab stays in its `Claude` group. Open example.com again yourself: the new tab focuses your first
-   tab, never Claude's.
+1. **Shortcut**: the e2e checks that the shortcuts are registered, but a key event sent over the
+   DevTools protocol reaches the page, never the extension's shortcut. With example.com open three
+   times while the extension is disabled, enable it and press `Alt+Shift+D`: one tab remains.
+2. **Claude Code**: the e2e names a group as Claude in Chrome does; only Claude Code shows that the
+   name still matches. Open example.com in a normal tab, then ask Claude Code to open example.com:
+   its tab stays in its `Claude` group. Open example.com again yourself: the new tab focuses your
+   first tab, never Claude's.
 
 To debug the service worker: `chrome://extensions` → the extension → "Service worker". Errors are
 logged to its console.

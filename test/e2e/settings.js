@@ -1,7 +1,8 @@
 // End-to-end scenarios that depend on a setting or on the browser around the tab: windows,
 // lists, pinned tabs, groups, ranking, in-tab actions, internal pages, help and language.
 // Each scenario starts from the default configuration and no test tab. Usage: pnpm test:e2e
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_DIR, launchChromium } from '../../scripts/lib/cdp.js';
 import { startSuite, waitFor } from './harness.js';
@@ -52,16 +53,16 @@ const openDuplicate = async (path, windowId) => {
 /** @param {number} tabId */
 const isActive = (tabId) => sw(`chrome.tabs.get(${tabId}).then((t) => t.active, () => null)`);
 // A headless browser reports every window as focused, so the window the extension brings to the
-// front is read from its calls: windows.update is wrapped to record the ids it focuses.
+// front is read from its calls: windows.update is wrapped to record the ids it focuses, and how.
 await sw(`(() => {
   globalThis.focusedWindows = [];
   const update = chrome.windows.update.bind(chrome.windows);
   chrome.windows.update = (id, info) => {
-    if (info.focused) globalThis.focusedWindows.push(id);
+    if (info.focused) globalThis.focusedWindows.push({ id, state: info.state });
     return update(id, info);
   };
 })()`);
-const lastFocusedWindow = () => sw('globalThis.focusedWindows.at(-1) ?? null');
+const lastFocusedWindow = () => sw('globalThis.focusedWindows.at(-1)?.id ?? null');
 // The user types the address: driven over CDP like the address bar, not through chrome.tabs.update.
 /** @param {string} from the page the tab shows, unique among the open ones @param {string} to */
 const typeInTab = async (from, to) => {
@@ -94,18 +95,23 @@ const reset = async () => {
 };
 
 await suite.run(async () => {
-  // 1. Another window: the existing tab's window is focused and the duplicate closed.
+  // 1. Another window, minimized: it is restored and focused, and the duplicate closed.
   const w1 = await sw(`chrome.windows.create({ url: '${BASE}/w' }).then((w) => w.id)`);
   const [inW1] = await waitTabs('/w', 1);
   await waitLoaded(inW1.id, '/w');
+  await sw(`chrome.windows.update(${w1}, { state: 'minimized' })`);
   const w2 = await sw(`chrome.windows.create({ url: 'about:blank' }).then((w) => w.id)`);
   await openDuplicate('/w', w2);
   const afterWindow = await waitTabs('/w', 1);
   check('duplicate in another window closed', afterWindow.length === 1, JSON.stringify(afterWindow));
+  const focusCall = await waitFor(
+    () => sw('globalThis.focusedWindows.at(-1) ?? null'),
+    (call) => call?.id === w1,
+  );
   check(
-    'existing tab and its window focused',
-    (await isActive(inW1.id)) === true && (await waitFor(lastFocusedWindow, (id) => id === w1)) === w1,
-    await tabsSeen(),
+    'existing tab focused, its window restored and focused',
+    (await isActive(inW1.id)) === true && focusCall?.id === w1 && focusCall?.state === 'normal',
+    JSON.stringify(focusCall),
   );
   await reset();
 
@@ -234,6 +240,16 @@ await suite.run(async () => {
   const internal = await waitFor(internalTabs, (ss) => !ss.includes('loading'));
   check('internal pages kept', internal.length === 2, await tabsSeen());
 
+  // 10b. Shortcuts: both commands have a key. Pressing one is manual: a key event sent over the
+  // DevTools protocol reaches the page, never the extension's shortcut.
+  const commands = await sw(`chrome.commands.getAll().then((cs) => cs.map((c) => [c.name, Boolean(c.shortcut)]))`);
+  const keyed = new Map(commands);
+  check(
+    'shortcuts registered',
+    keyed.get('dedupe-all') === true && keyed.get('toggle-enabled') === true,
+    JSON.stringify(commands),
+  );
+
   // 11. Help: a "?" unfolds its text under the option and folds it again.
   const options = await attach(await open(`chrome-extension://${extId}/options/options.html`));
   await waitFor(
@@ -290,9 +306,53 @@ await suite.run(async () => {
       tester.saved.length === 0,
     JSON.stringify(tester),
   );
+
+  // 13. Export and import: the exported form comes back whole; invalid rules are dropped with a warning.
+  const files = mkdtempSync(join(tmpdir(), 'fet-files-'));
+  try {
+    await suite.cdp('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: files });
+    const exported = join(files, 'focus-existing-tab-config.json');
+    await evaluate(options, `document.getElementById('export').click()`);
+    await waitFor(
+      async () => existsSync(exported),
+      (done) => done,
+    );
+    const json = JSON.parse(readFileSync(exported, 'utf8'));
+    check('export holds the form', json.blacklist?.[0]?.pattern === '127.0.0.1', JSON.stringify(json.blacklist));
+    await suite.cdp('DOM.enable', {}, options);
+    /** @param {string} file */
+    const importFile = async (file) => {
+      const { root } = await suite.cdp('DOM.getDocument', {}, options);
+      const { nodeId } = await suite.cdp(
+        'DOM.querySelector',
+        { nodeId: root.nodeId, selector: '#importFile' },
+        options,
+      );
+      await suite.cdp('DOM.setFileInputFiles', { nodeId, files: [file] }, options);
+    };
+    const status = () => read(options, `document.getElementById('status').textContent`);
+    const closeField = `document.querySelector('[name="closeDuplicate"]')`;
+    await evaluate(options, `${closeField}.checked = false`);
+    await importFile(exported);
+    const loadedMessage = await evaluate(options, `chrome.i18n.getMessage('importLoaded')`);
+    const afterImport = await waitFor(status, (s) => s === loadedMessage);
+    check(
+      'import fills the form back',
+      afterImport === loadedMessage && (await evaluate(options, `${closeField}.checked`)) === true,
+      JSON.stringify(afterImport),
+    );
+    const invalid = join(files, 'invalid.json');
+    writeFileSync(invalid, JSON.stringify({ blacklist: [{ pattern: '(', type: 'regex' }] }));
+    await importFile(invalid);
+    const dropped = await evaluate(options, `chrome.i18n.getMessage('importDropped', ['1'])`);
+    const afterInvalid = await waitFor(status, (s) => s?.endsWith(dropped));
+    check('import warns of a dropped invalid rule', afterInvalid?.endsWith(dropped), JSON.stringify(afterInvalid));
+  } finally {
+    rmSync(files, { recursive: true, force: true });
+  }
   await suite.checkNoErrors([pageSession, options]);
 
-  // 13. Language: the pages follow the browser's language, whatever the system's is.
+  // 14. Language: the pages follow the browser's language, whatever the system's is.
   for (const language of ['en', 'es']) {
     const label = JSON.parse(readFileSync(join(REPO_DIR, '_locales', language, 'messages.json'), 'utf8'))
       .popupAvoidedLabel.message;
