@@ -16,7 +16,9 @@ export const SCOPE = 'reports/mutation-scope.json';
 
 /**
  * @typedef {Record<string, string>} Fingerprint what every mutant depends on
- * @typedef {{ fingerprint: Fingerprint, inputs: Record<string, string[]>, hashes: Record<string, string> }} Scope
+ * @typedef {{ timeoutMS: number, timeoutFactor: number }} Timeout the per-mutant timeout's parts
+ * @typedef {{ fingerprint: Fingerprint, timeout: Timeout, inputs: Record<string, string[]>, hashes: Record<string, string> }} Scope
+ * @typedef {{ files: Record<string, { mutants: { status: string }[] }> }} Report Stryker's stored results
  */
 
 /** @param {string} text */
@@ -57,6 +59,49 @@ export const inputsOf = (test, read) => {
 // and location: mutants new to the set run, and mutants gone from it are dropped. For the same
 // reason the Stryker version is not in the fingerprint.
 const INERT_CONFIG = new Set(['$schema', 'mutate', 'reporters', 'htmlReporter', 'tempDirName', 'thresholds']);
+// The per-mutant timeout's parts, with Stryker's defaults. A change to them re-runs only the
+// mutants it can flip (timeoutRerun), so they stay out of the fingerprint.
+const DEFAULT_TIMEOUT = { timeoutMS: 5000, timeoutFactor: 1.5 };
+
+/**
+ * The per-mutant timeout a config sets, Stryker's default for each part it leaves out.
+ * @param {Record<string, unknown>} config
+ * @returns {Timeout}
+ */
+export const timeoutOf = (config) => ({
+  timeoutMS: Number(config.timeoutMS ?? DEFAULT_TIMEOUT.timeoutMS),
+  timeoutFactor: Number(config.timeoutFactor ?? DEFAULT_TIMEOUT.timeoutFactor),
+});
+
+/**
+ * The statuses whose stored results a timeout change can flip: a shorter part, the survivors (they
+ * may now time out); a longer one, the timed-out mutants (they may now survive).
+ * @param {Timeout} previous
+ * @param {Timeout} current
+ */
+export const timeoutRerun = (previous, current) => {
+  const parts = /** @type {(keyof Timeout)[]} */ (Object.keys(DEFAULT_TIMEOUT));
+  return [
+    ...(parts.some((part) => current[part] < previous[part]) ? ['Survived'] : []),
+    ...(parts.some((part) => current[part] > previous[part]) ? ['Timeout'] : []),
+  ];
+};
+
+/**
+ * Drops from the stored results every mutant with one of these statuses, so Stryker re-runs it.
+ * @param {Report} report
+ * @param {string[]} statuses
+ * @returns {Report}
+ */
+export const withoutStatuses = (report, statuses) => ({
+  ...report,
+  files: Object.fromEntries(
+    Object.entries(report.files).map(([file, result]) => [
+      file,
+      { ...result, mutants: result.mutants.filter((mutant) => !statuses.includes(mutant.status)) },
+    ]),
+  ),
+});
 
 /**
  * What every mutant depends on: how the tests run (any Stryker config key not known to be inert),
@@ -66,7 +111,7 @@ const INERT_CONFIG = new Set(['$schema', 'mutate', 'reporters', 'htmlReporter', 
  * @returns {Fingerprint}
  */
 export const fingerprintOf = ({ config, nodeVersion, vitestVersion }) => {
-  const keys = Object.keys(config).filter((key) => !INERT_CONFIG.has(key));
+  const keys = Object.keys(config).filter((key) => !INERT_CONFIG.has(key) && !(key in DEFAULT_TIMEOUT));
   return {
     'stryker.config.json': hashOf(JSON.stringify(keys.sort().map((key) => [key, config[key]]))),
     node: nodeVersion.split('.')[0],

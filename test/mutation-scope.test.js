@@ -1,6 +1,14 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { fingerprintOf, fullRunReason, inputsOf, staleModules } from '../scripts/lib/mutation-scope.js';
+import {
+  fingerprintOf,
+  fullRunReason,
+  inputsOf,
+  staleModules,
+  timeoutOf,
+  timeoutRerun,
+  withoutStatuses,
+} from '../scripts/lib/mutation-scope.js';
 
 // A small repository: two src/lib modules (b imports a), a shared test helper and a fixture.
 /** @type {Record<string, string>} */
@@ -33,11 +41,13 @@ const inputsIn = (files) =>
       .filter((path) => path.endsWith('.test.js'))
       .map((path) => [path, inputsOf(path, reader(files))]),
   );
+const TIMEOUT = { timeoutMS: 5000, timeoutFactor: 1.5 };
 /** The scope recorded by a run over `files`. @param {Record<string, string>} files */
 const recorded = (files) => {
   const inputs = inputsIn(files);
   const paths = [...new Set(Object.values(inputs).flat())];
-  return { fingerprint: {}, inputs, hashes: Object.fromEntries(paths.map((path) => [path, hasher(files)(path)])) };
+  const hashes = Object.fromEntries(paths.map((path) => [path, hasher(files)(path)]));
+  return { fingerprint: {}, timeout: TIMEOUT, inputs, hashes };
 };
 /** What a scoped run over `files` re-runs after a run over REPO. @param {Record<string, string>} files */
 const staleAfter = (files) => staleModules(recorded(REPO), inputsIn(files), hasher(files));
@@ -74,7 +84,7 @@ test('a package import other than Vitest is refused, since its version is not am
 
 test('a full run is due when asked with --full or with no previous result, whatever else', () => {
   const fingerprint = { node: '22' };
-  const previous = { fingerprint, inputs: {}, hashes: {} };
+  const previous = { fingerprint, timeout: TIMEOUT, inputs: {}, hashes: {} };
   assert.equal(fullRunReason({ full: true, previous, fingerprint }), 'requested with --full');
   assert.equal(
     fullRunReason({ full: false, previous: undefined, fingerprint }),
@@ -83,7 +93,7 @@ test('a full run is due when asked with --full or with no previous result, whate
 });
 
 test('a full run is due when the fingerprint changed, naming what changed', () => {
-  const previous = { fingerprint: { config: '1', node: '22', other: 'x' }, inputs: {}, hashes: {} };
+  const previous = { fingerprint: { config: '1', node: '22', other: 'x' }, timeout: TIMEOUT, inputs: {}, hashes: {} };
   assert.equal(fullRunReason({ full: false, previous, fingerprint: { config: '1', node: '22', other: 'x' } }), '');
   assert.equal(
     fullRunReason({ full: false, previous, fingerprint: { config: '2', node: '24', other: 'x' } }),
@@ -123,6 +133,7 @@ test('config that changes neither which mutants exist nor how their tests run le
     { ...CONFIG, tempDirName: '.tmp' },
     { ...CONFIG, thresholds: { high: 90, low: 80, break: 80 } },
     { thresholds, ...rest },
+    { ...CONFIG, timeoutMS: 8000, timeoutFactor: 2 },
   ]) {
     assert.deepEqual(fingerprint(config), fingerprint(), JSON.stringify(config));
   }
@@ -133,13 +144,46 @@ test('config that changes how the tests run changes the fingerprint, an unknown 
     { ...CONFIG, testRunner: 'mocha' },
     { ...CONFIG, commandRunner: { command: 'node --test' } },
     { ...CONFIG, coverageAnalysis: 'off' },
-    { ...CONFIG, timeoutFactor: 20 },
-    { ...CONFIG, timeoutMS: 5000 },
     { ...CONFIG, plugins: ['x'] },
     { ...CONFIG, vitest: { configFile: 'x.js' } },
   ]) {
     assert.notDeepEqual(fingerprint(config), fingerprint(), JSON.stringify(config));
   }
+});
+
+test("the timeout is the config's parts, Stryker's default for each one left out", () => {
+  assert.deepEqual(timeoutOf(CONFIG), { timeoutMS: 5000, timeoutFactor: 1.5 });
+  assert.deepEqual(timeoutOf({ timeoutMS: 8000 }), { timeoutMS: 8000, timeoutFactor: 1.5 });
+  assert.deepEqual(timeoutOf({ timeoutFactor: 2 }), { timeoutMS: 5000, timeoutFactor: 2 });
+});
+
+test('a longer timeout re-runs the timed-out mutants, a shorter one the survivors, an unchanged one none', () => {
+  const was = { timeoutMS: 5000, timeoutFactor: 1.5 };
+  assert.deepEqual(timeoutRerun(was, was), []);
+  assert.deepEqual(timeoutRerun(was, { ...was, timeoutMS: 8000 }), ['Timeout']);
+  assert.deepEqual(timeoutRerun(was, { ...was, timeoutFactor: 2 }), ['Timeout']);
+  assert.deepEqual(timeoutRerun(was, { ...was, timeoutMS: 2000 }), ['Survived']);
+  assert.deepEqual(timeoutRerun(was, { ...was, timeoutFactor: 1 }), ['Survived']);
+  assert.deepEqual(timeoutRerun(was, { timeoutMS: 8000, timeoutFactor: 1 }), ['Survived', 'Timeout']);
+});
+
+test('dropping statuses removes those mutants from every file and keeps the rest', () => {
+  const mutant = (/** @type {string} */ status) => ({ status, id: status });
+  const report = {
+    schemaVersion: '2',
+    files: {
+      'src/lib/a.js': { source: 'a', mutants: [mutant('Killed'), mutant('Survived'), mutant('Timeout')] },
+      'src/lib/b.js': { source: 'b', mutants: [mutant('Timeout'), mutant('NoCoverage')] },
+    },
+  };
+  assert.deepEqual(withoutStatuses(report, ['Timeout']), {
+    schemaVersion: '2',
+    files: {
+      'src/lib/a.js': { source: 'a', mutants: [mutant('Killed'), mutant('Survived')] },
+      'src/lib/b.js': { source: 'b', mutants: [mutant('NoCoverage')] },
+    },
+  });
+  assert.deepEqual(withoutStatuses(report, []), report);
 });
 
 test('nothing changed re-runs nothing', () => {

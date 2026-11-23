@@ -14,6 +14,9 @@ import {
   hashOf,
   inputsOf,
   staleModules,
+  timeoutOf,
+  timeoutRerun,
+  withoutStatuses,
 } from './lib/mutation-scope.js';
 
 /** @param {string} path */
@@ -28,29 +31,43 @@ const tests = readdirSync(join(REPO_DIR, 'test'))
   .map((name) => `test/${name}`);
 /** @type {Record<string, string[]>} */
 const inputs = Object.fromEntries(tests.map((test) => [test, inputsOf(test, read)]));
+const config = JSON.parse(read('stryker.config.json'));
 const fingerprint = fingerprintOf({
-  config: JSON.parse(read('stryker.config.json')),
+  config,
   nodeVersion: process.versions.node,
   vitestVersion: JSON.parse(read('node_modules/vitest/package.json')).version,
 });
+const timeout = timeoutOf(config);
 const paths = [...new Set(Object.values(inputs).flat())];
-const scope = { fingerprint, inputs, hashes: Object.fromEntries(paths.map((path) => [path, hash(path)])) };
+const scope = { fingerprint, timeout, inputs, hashes: Object.fromEntries(paths.map((path) => [path, hash(path)])) };
 
 const previous = exists(INCREMENTAL) && exists(SCOPE) ? JSON.parse(read(SCOPE)) : undefined;
 const reason = fullRunReason({ full: process.argv.includes('--full'), previous, fingerprint });
 if (reason) console.log(`mutation: full run, ${reason}`);
 else {
-  // Drops the stored results of the src/lib modules reached by a test whose inputs changed.
+  // Drops the stored results of the src/lib modules reached by a test whose inputs changed, and of
+  // the mutants a timeout change can flip.
   const stale = staleModules(previous, inputs, hash);
-  if (stale.modules.length) {
-    console.log(`mutation: ${stale.tests.join(', ')} or what it reads changed; re-running ${stale.modules.join(', ')}`);
-    const report = JSON.parse(read(INCREMENTAL));
-    for (const module of stale.modules) delete report.files[module];
+  const statuses = timeoutRerun(previous.timeout, timeout);
+  if (stale.modules.length || statuses.length) {
+    let report = JSON.parse(read(INCREMENTAL));
+    if (stale.modules.length) {
+      console.log(
+        `mutation: ${stale.tests.join(', ')} or what it reads changed; re-running ${stale.modules.join(', ')}`,
+      );
+      for (const module of stale.modules) delete report.files[module];
+    }
+    if (statuses.length) {
+      console.log(
+        `mutation: the per-mutant timeout changed; re-running the mutants with status ${statuses.join(', ')}`,
+      );
+      report = withoutStatuses(report, statuses);
+    }
     writeFileSync(join(REPO_DIR, INCREMENTAL), JSON.stringify(report));
   }
 }
 
-// Bounds: half the cores at lower priority; the per-mutant timeout lives in stryker.config.json.
+// Bounds: half the cores at lower priority, and Stryker's default per-mutant timeout.
 const concurrency = String(Math.max(1, Math.floor(availableParallelism() / 2)));
 const args = ['-n', '10', 'stryker', 'run', '--incremental', '--concurrency', concurrency];
 if (reason) args.push('--force');

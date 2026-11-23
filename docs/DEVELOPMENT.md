@@ -104,17 +104,20 @@ e2e covers them (without a metric) and the type check validates them against `@t
     the modules reached by the tests that use it. Unit tests import no package but Vitest, whose
     version the script tracks (the script refuses any other, since it does not track its version),
     so the rest of the lockfile, `package.json` and `pnpm-workspace.yaml` re-run nothing.
+  - A change to the per-mutant timeout (`timeoutMS`, `timeoutFactor`) re-runs only the mutants it
+    can flip: a longer one, those that timed out; a shorter one, those that survived.
   - Full run (every mutant, reason printed): with `pnpm mutation --full`, when there is no previous
     result (a fresh checkout or worktree), or when how the tests run changed: a key of
     `stryker.config.json` other than `$schema`, `mutate`, `reporters`, `htmlReporter`,
-    `tempDirName` and `thresholds`, the Node major or the Vitest version. Those keys
+    `tempDirName`, `thresholds` and the timeout's, the Node major or the Vitest version. Those keys
     and the Stryker version re-run nothing: Stryker identifies each mutant by file, mutator,
     replacement and location, so mutants new to the set run and the ones gone from it are dropped.
     A release, a version bump, the pre-push hook or a score are never a reason for a full run. The
     unit suite has no Vitest config file; one added would change how the tests run, so it would
     have to join the fingerprint (`scripts/lib/mutation-scope.js`).
-  - Bounded: half the cores (`--concurrency`), `nice -n 10`, and a per-mutant timeout of
-    `timeoutFactor` 10 × the tests' time + `timeoutMS` 2000.
+  - Bounded: half the cores (`--concurrency`), `nice -n 10`, and Stryker's default per-mutant
+    timeout (`timeoutMS` 5000 + `timeoutFactor` 1.5 × the test's time). On a loaded machine, raise
+    `timeoutMS`, not `timeoutFactor`, and record why in `docs/decisions/`.
 - **E2E** (`test/e2e/`): each suite launches a headless browser with a temporary profile, loads the
   extension and checks its scenarios over the DevTools protocol. `smoke.js`: duplicate tab,
   redirect, in-tab navigation, reload, excluded groups, badge, popup, options. `settings.js`: one
