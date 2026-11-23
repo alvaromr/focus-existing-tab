@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { findExistingTab, planDedupeAll, canCloseTab, excludedGroupIds } from '../src/lib/dedupe.js';
 import { normalizeConfig } from '../src/lib/config.js';

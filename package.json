@@ -6,8 +6,8 @@
   "type": "module",
   "packageManager": "pnpm@12.20.0",
   "scripts": {
-    "test": "node --test 'test/**/*.test.js'",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 'test/**/*.test.js'",
+    "test": "vitest run --dir test",
+    "coverage": "vitest run --dir test --coverage --coverage.thresholds.lines=100 --coverage.thresholds.branches=100 --coverage.thresholds.functions=100",
     "test:e2e": "node test/e2e/smoke.js && node test/e2e/settings.js",
     "mutation": "node scripts/mutation.js",
     "lint": "eslint . && prettier --check . && shellcheck scripts/*.sh scripts/ci/*.sh .githooks/*",
@@ -36,11 +36,14 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@types/chrome": "0.3.7",
     "@types/node": "26.6.6",
+    "@vitest/coverage-v8": "5.1.1",
     "eslint": "10.15.0",
     "globals": "17.14.0",
     "prettier": "3.10.1",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "5.1.1"
   }
 }

@@ -31,6 +31,7 @@ const inputs = Object.fromEntries(tests.map((test) => [test, inputsOf(test, read
 const fingerprint = fingerprintOf({
   config: JSON.parse(read('stryker.config.json')),
   nodeVersion: process.versions.node,
+  vitestVersion: JSON.parse(read('node_modules/vitest/package.json')).version,
 });
 const paths = [...new Set(Object.values(inputs).flat())];
 const scope = { fingerprint, inputs, hashes: Object.fromEntries(paths.map((path) => [path, hash(path)])) };

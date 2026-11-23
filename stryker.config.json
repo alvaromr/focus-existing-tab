@@ -1,9 +1,8 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "mutate": ["src/lib/**/*.js"],
-  "testRunner": "command",
-  "commandRunner": { "command": "node --test --test-concurrency=1 'test/**/*.test.js'" },
-  "coverageAnalysis": "off",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
   "timeoutFactor": 10,
   "timeoutMS": 2000,
   "reporters": ["clear-text", "progress", "html"],

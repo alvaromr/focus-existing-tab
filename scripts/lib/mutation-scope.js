@@ -1,11 +1,13 @@
 // What a scoped mutation run re-runs (docs/DEVELOPMENT.md, "Tests"). Pure decisions over file
 // contents passed in; scripts/mutation.js reads the files and runs Stryker.
 //
-// Stryker's command runner reports no per-test coverage, so its incremental mode cannot see a
-// changed test: it would reuse every mutant in unchanged source. The scope closes that gap. It
-// records, per unit test file, what the test depends on (itself, the relative modules it imports,
-// transitively, and the files it reads); when any of those changed, the src/lib modules that test
-// reaches are re-run.
+// Stryker's incremental mode re-runs a mutant when its own code or the body of a test covering it
+// changed. It cannot see the rest of what a test depends on: code outside the test bodies (a
+// helper at the top of the file), an imported helper or fixture, or another src/lib module the
+// mutated one imports; it would reuse those mutants. The scope closes that gap. It records, per
+// unit test file, what the test depends on (itself, the relative modules it imports, transitively,
+// and the files it reads); when any of those changed, the src/lib modules that test reaches are
+// re-run.
 import { createHash } from 'node:crypto';
 import { dirname, join, normalize } from 'node:path';
 
@@ -21,12 +23,14 @@ export const SCOPE = 'reports/mutation-scope.json';
 export const hashOf = (text) => createHash('sha256').update(text).digest('hex');
 
 const IMPORT = /^import[^'"]*['"](\.[^'"]+)['"]/gm;
-const PACKAGE = /^import[^'"]*['"]((?!node:)[^.'"][^'"]*)['"]/gm;
+// Vitest, the test runner, is the one package a test may import: its version is in the fingerprint.
+const PACKAGE = /^import[^'"]*['"]((?!node:|vitest['"])[^.'"][^'"]*)['"]/gm;
 const READ = /new URL\(['"](\.[^'"]+)['"], import\.meta\.url\)/g;
 
 /**
- * A test's inputs: itself, its relative imports (transitively) and the files it reads. A package
- * import throws: its version is not among the inputs, so a dependency upgrade would go unseen.
+ * A test's inputs: itself, its relative imports (transitively) and the files it reads. Any other
+ * package import than Vitest throws: its version is not among the inputs, so a dependency upgrade
+ * would go unseen.
  * @param {string} test path from the repository root
  * @param {(path: string) => string} read
  */
@@ -55,16 +59,18 @@ export const inputsOf = (test, read) => {
 const INERT_CONFIG = new Set(['$schema', 'mutate', 'reporters', 'htmlReporter', 'tempDirName', 'thresholds']);
 
 /**
- * What every mutant depends on: how the tests run (any Stryker config key not known to be inert)
- * and the Node major they run on. A change here invalidates every previous result.
- * @param {{ config: Record<string, unknown>, nodeVersion: string }} sources
+ * What every mutant depends on: how the tests run (any Stryker config key not known to be inert),
+ * the Node major they run on and the Vitest version every test imports. A change here invalidates
+ * every previous result.
+ * @param {{ config: Record<string, unknown>, nodeVersion: string, vitestVersion: string }} sources
  * @returns {Fingerprint}
  */
-export const fingerprintOf = ({ config, nodeVersion }) => {
+export const fingerprintOf = ({ config, nodeVersion, vitestVersion }) => {
   const keys = Object.keys(config).filter((key) => !INERT_CONFIG.has(key));
   return {
     'stryker.config.json': hashOf(JSON.stringify(keys.sort().map((key) => [key, config[key]]))),
     node: nodeVersion.split('.')[0],
+    vitest: vitestVersion,
   };
 };
 

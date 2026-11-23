@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { ruleMatches, findMatchingRule, resolveDecision, analyzeUrl } from '../src/lib/matching.js';
 import { normalizeConfig, createRule } from '../src/lib/config.js';

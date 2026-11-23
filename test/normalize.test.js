@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { normalizeUrl, isEligibleUrl, isBlankUrl } from '../src/lib/normalize.js';
 import { DEFAULT_CONFIG } from '../src/lib/config.js';

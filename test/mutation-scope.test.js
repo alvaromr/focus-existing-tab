@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { fingerprintOf, fullRunReason, inputsOf, staleModules } from '../scripts/lib/mutation-scope.js';
 
@@ -10,7 +10,8 @@ const REPO = {
   'src/lib/c.js': 'export const c = 3;',
   'test/helper.js': "import { c } from '../src/lib/c.js';\nexport const h = c;",
   'test/fixture.json': '{}',
-  'test/a.test.js': "import { test } from 'node:test';\nimport { a } from '../src/lib/a.js';",
+  'test/a.test.js':
+    "import { test } from 'vitest';\nimport assert from 'node:assert/strict';\nimport { a } from '../src/lib/a.js';",
   // Split so that the mutation script, which reads this file too, does not take it for a read.
   'test/b.test.js': "import { b } from '../src/lib/b.js';\nnew URL(" + "'./fixture.json', import.meta.url);",
   'test/c.test.js': "import { h } from './helper.js';",
@@ -61,12 +62,14 @@ test('an import cycle is followed once', () => {
   assert.deepEqual(inputsOf('test/x.test.js', reader(files)), ['src/lib/x.js', 'src/lib/y.js', 'test/x.test.js']);
 });
 
-test('a package import is refused, since its version is not among the inputs', () => {
-  const files = { 'test/p.test.js': "import { test } from 'node:test';\nimport x from 'some-package';" };
-  assert.throws(
-    () => inputsOf('test/p.test.js', reader(files)),
-    /^Error: test\/p\.test\.js imports the package some-package/,
-  );
+test('a package import other than Vitest is refused, since its version is not among the inputs', () => {
+  for (const name of ['some-package', 'vitest/config']) {
+    const files = { 'test/p.test.js': `import { test } from 'vitest';\nimport x from '${name}';` };
+    assert.throws(
+      () => inputsOf('test/p.test.js', reader(files)),
+      new RegExp(`^Error: test/p\\.test\\.js imports the package ${name}`),
+    );
+  }
 });
 
 test('a full run is due when asked with --full or with no previous result, whatever else', () => {
@@ -91,23 +94,23 @@ test('a full run is due when the fingerprint changed, naming what changed', () =
 const CONFIG = {
   $schema: './node_modules/@stryker-mutator/core/schema/stryker-schema.json',
   mutate: ['src/lib/**/*.js'],
-  testRunner: 'command',
-  commandRunner: { command: "node --test 'test/**/*.test.js'" },
-  coverageAnalysis: 'off',
-  timeoutFactor: 10,
-  timeoutMS: 2000,
+  testRunner: 'vitest',
+  plugins: ['@stryker-mutator/vitest-runner'],
   reporters: ['clear-text'],
   htmlReporter: { fileName: 'reports/mutation/index.html' },
   tempDirName: '.stryker-tmp',
   thresholds: { high: 100, low: 95, break: 100 },
 };
-const fingerprint = (config = CONFIG, nodeVersion = '22.11.0') => fingerprintOf({ config, nodeVersion });
+const fingerprint = (config = CONFIG, nodeVersion = '22.11.0', vitestVersion = '5.1.1') =>
+  fingerprintOf({ config, nodeVersion, vitestVersion });
 
-test('the fingerprint holds how the tests run and the Node major, not the Stryker version', () => {
-  assert.deepEqual(Object.keys(fingerprint()), ['stryker.config.json', 'node']);
+test('the fingerprint holds how the tests run, the Node major and the Vitest version, not the Stryker version', () => {
+  assert.deepEqual(Object.keys(fingerprint()), ['stryker.config.json', 'node', 'vitest']);
   assert.equal(fingerprint().node, '22');
+  assert.equal(fingerprint().vitest, '5.1.1');
   assert.deepEqual(fingerprint(CONFIG, '22.20.1'), fingerprint());
   assert.notDeepEqual(fingerprint(CONFIG, '24.0.0'), fingerprint());
+  assert.notDeepEqual(fingerprint(CONFIG, '22.11.0', '5.1.2'), fingerprint());
 });
 
 test('config that changes neither which mutants exist nor how their tests run leaves the fingerprint', () => {
@@ -129,10 +132,11 @@ test('config that changes how the tests run changes the fingerprint, an unknown 
   for (const config of [
     { ...CONFIG, testRunner: 'mocha' },
     { ...CONFIG, commandRunner: { command: 'node --test' } },
-    { ...CONFIG, coverageAnalysis: 'perTest' },
+    { ...CONFIG, coverageAnalysis: 'off' },
     { ...CONFIG, timeoutFactor: 20 },
     { ...CONFIG, timeoutMS: 5000 },
     { ...CONFIG, plugins: ['x'] },
+    { ...CONFIG, vitest: { configFile: 'x.js' } },
   ]) {
     assert.notDeepEqual(fingerprint(config), fingerprint(), JSON.stringify(config));
   }
