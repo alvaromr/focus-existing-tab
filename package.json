@@ -30,7 +30,7 @@
     "url": "https://github.com/alvaromr/focus-existing-tab.git"
   },
   "engines": {
-    "node": ">=22"
+    "node": "^22.22.2 || ^24.15.0 || >=26"
   },
   "license": "MIT",
   "devDependencies": {

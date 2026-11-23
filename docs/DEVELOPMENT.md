@@ -5,8 +5,9 @@ Plain JavaScript with ES modules (Manifest V3), no build step. The extension has
 
 ## Requirements
 
-- Node: the version in `.node-version`; the oldest supported is in `package.json` `engines`, set by
-  the e2e runner's use of the global `WebSocket`.
+- Node: the version in `.node-version`; the supported ones are in `package.json` `engines`, set by
+  the development tooling: the strictest `engines` among the locked dependencies (Stryker's
+  `@inquirer/*`, `^22.22.2 || ^24.15.0 || >=26`), which also leaves out Node 23 and 25.
 - pnpm: the version in `package.json` `packageManager`. `pnpm-workspace.yaml` blocks dependency
   install scripts, makes every new version wait `minimumReleaseAge` and refuses trust downgrades;
   its comments give the reason for each setting, override and ignored advisory.
