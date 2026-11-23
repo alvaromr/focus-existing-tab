@@ -83,7 +83,6 @@ English, Spanish
 
 ## Before uploading
 
-1. `pnpm check && pnpm test:e2e`
-2. `pnpm release` (bumps `manifest.json` and `package.json`).
-3. `pnpm package` → `dist/focus-existing-tab-<version>.zip`.
-4. `pnpm screenshots` if the UI changed.
+1. `pnpm release`, which runs the checks first ([Versioning and releases](../docs/DEVELOPMENT.md#versioning-and-releases)).
+2. `pnpm package` → `dist/focus-existing-tab-<version>.zip`, built with the new version.
+3. `pnpm screenshots` if the UI changed.
