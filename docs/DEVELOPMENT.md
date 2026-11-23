@@ -76,13 +76,14 @@ scripts/check-file-size.js       gate guard: 400-line cap per code file
 scripts/ci/install-gitleaks.sh   pinned gitleaks for the CI runners
 scripts/release.js               version bump, changelog, commit and tag
 scripts/mutation.js              scoped mutation run (Stryker incremental, bounded)
+scripts/lib/mutation-scope.js    what a scoped mutation run re-runs (pure decisions)
 scripts/make-icons.js            generates the PNG icons (no dependencies)
 store/                           Web Store listing: copy, checklist and screenshots
 docs/                            this documentation
 ```
 
 All decision logic lives in `src/lib/*` without touching `chrome.*`, and coverage is measured over
-it and the other modules the unit tests load (`scripts/lib/commit-subject.js`). `background.js`, `src/chrome/*`, `options.js` and `popup.js` depend on `chrome.*`: the
+it and the other modules the unit tests load (`scripts/lib/commit-subject.js`, `scripts/lib/mutation-scope.js`). `background.js`, `src/chrome/*`, `options.js` and `popup.js` depend on `chrome.*`: the
 e2e covers them (without a metric) and the type check validates them against `@types/chrome`.
 
 ## Tests
