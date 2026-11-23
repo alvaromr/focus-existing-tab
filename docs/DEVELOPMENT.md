@@ -63,6 +63,7 @@ options/                         options page
 popup/                           popup
 test/*.test.js                   unit tests
 test/e2e/smoke.js                end-to-end test in headless Chromium
+test/e2e/harness.js              e2e test server, browser, polling helpers and check log
 scripts/lib/cdp.js               headless Chromium launcher + CDP client (e2e and screenshots)
 scripts/lib/commit-subject.js    commit subject rule (commit-msg hook and release commit)
 scripts/screenshots.js           1280×800 store screenshots

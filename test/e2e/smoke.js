@@ -1,84 +1,11 @@
 // End-to-end smoke test: headless Chromium + the unpacked extension, driven over CDP.
 // Browser requirements and CHROME override: see scripts/lib/cdp.js. Usage: pnpm test:e2e
-import { createServer } from 'node:http';
-import { launchChromium, sleep } from '../../scripts/lib/cdp.js';
+import { equals, startSuite, startsWith, waitFor } from './harness.js';
 
-const server = createServer((req, res) => {
-  const url = req.url ?? '/';
-  res.setHeader('content-type', 'text/html');
-  if (url.startsWith('/redirect')) {
-    res.writeHead(302, { location: '/a' });
-    return res.end();
-  }
-  res.end(`<title>${url}</title><h1>${url}</h1>`);
-});
-await new Promise((r) => server.listen(0, '127.0.0.1', () => r(null)));
-// Listening on a TCP port, the address is an AddressInfo.
-const BASE = `http://127.0.0.1:${/** @type {import('node:net').AddressInfo} */ (server.address()).port}`;
+const { BASE, cdp, pages, open, attach, evaluate, extId, swSession, ...suite } = await startSuite();
+const { check, urls, countPages, tabsSeen, read, loaded } = suite;
 
-const browser = await launchChromium();
-const { cdp, events, pages, open, attach, evaluate, extId, swSession } = browser;
-
-/** @type {{ name: string, ok: boolean }[]} */
-const results = [];
-/** @param {string} name @param {boolean} ok @param {string} [detail] */
-const check = (name, ok, detail = '') => {
-  results.push({ name, ok });
-  console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`);
-};
-/** @typedef {(url: string) => boolean} UrlMatch */
-const urls = async () => JSON.stringify((await pages()).map((t) => t.url));
-/** @param {UrlMatch} match */
-const countPages = async (match) => (await pages()).filter((t) => match(t.url)).length;
-/** @param {string} prefix @returns {UrlMatch} */
-const startsWith = (prefix) => (url) => url.startsWith(prefix);
-/** @param {string} expected @returns {UrlMatch} */
-const equals = (expected) => (url) => url === expected;
-
-// Polls `probe` until `done(value)` holds or the timeout passes, and returns the last value.
-// Checks wait for the outcome instead of sleeping a fixed time, which races a slow machine.
-/**
- * @template T
- * @param {() => Promise<T>} probe
- * @param {(value: T) => boolean} done
- * @returns {Promise<T>}
- */
-async function waitFor(probe, done, timeout = 10_000) {
-  const deadline = Date.now() + timeout;
-  for (;;) {
-    const value = await probe();
-    if (done(value) || Date.now() > deadline) return value;
-    await sleep(50);
-  }
-}
-// Every tab as the extension sees it, and the service worker's warnings: the detail of a failed check.
-const tabsSeen = async () =>
-  JSON.stringify({
-    tabs: await evaluate(
-      swSession,
-      `chrome.tabs.query({}).then((ts) => ts.map((t) => [t.id, t.windowId, t.groupId, t.status, t.url || t.pendingUrl]))`,
-    ),
-    warnings: events
-      .filter(
-        (e) => e.sessionId === swSession && e.method === 'Runtime.consoleAPICalled' && e.params.type === 'warning',
-      )
-      .map((e) =>
-        e.params.args?.map((/** @type {{ value?: unknown, description?: string }} */ a) => a.value ?? a.description),
-      ),
-  });
-// While a page is navigating its execution context can vanish; the poll then simply retries.
-/** @param {string} sessionId @param {string} expression */
-const read = (sessionId, expression) => evaluate(sessionId, expression).catch(() => undefined);
-/** @param {string} sessionId */
-// A new target starts on a complete about:blank before navigating to its URL: wait for a page of
-// the test server, or a slow machine moves on before the navigation has even started.
-const loaded = (sessionId) =>
-  waitFor(
-    () => read(sessionId, 'document.readyState + " " + location.origin'),
-    (state) => state === `complete ${BASE}`,
-  );
-
-try {
+await suite.run(async () => {
   // 1. New tab with a duplicate URL (tracking param + fragment) is closed.
   const first = await open(`${BASE}/a`);
   await loaded(await attach(first));
@@ -220,39 +147,5 @@ try {
     o.shownGroups === 'Claude\nClaude (MCP)\n?Claude\n?Claude (MCP)' && o.savedGroups?.at(-1) === 'Work',
     JSON.stringify({ shown: o.shownGroups, saved: o.savedGroups }),
   );
-  // Grace period for asynchronous errors triggered by the last actions to reach the event log.
-  await sleep(500);
-
-  const pageErrors = events.filter(
-    (e) => [popupSession, optSession].includes(e.sessionId) && e.method === 'Runtime.exceptionThrown',
-  );
-  check(
-    'no popup/options exceptions',
-    pageErrors.length === 0,
-    JSON.stringify(pageErrors.map((e) => e.params.exceptionDetails?.exception?.description)),
-  );
-  const swErrors = events.filter(
-    (e) =>
-      e.sessionId === swSession &&
-      (e.method === 'Runtime.exceptionThrown' ||
-        (e.method === 'Runtime.consoleAPICalled' && e.params.type === 'error')),
-  );
-  check(
-    'no service worker errors',
-    swErrors.length === 0,
-    JSON.stringify(
-      swErrors.map(
-        (e) =>
-          e.params.exceptionDetails?.exception?.description ||
-          e.params.args?.map((/** @type {{ value: unknown }} */ a) => a.value),
-      ),
-    ),
-  );
-} finally {
-  await browser.close();
-  server.close();
-}
-
-const failed = results.filter((r) => !r.ok).length;
-console.log(`\n${results.length - failed}/${results.length} checks passed`);
-process.exit(failed ? 1 : 0);
+  await suite.checkNoErrors([popupSession, optSession]);
+});
