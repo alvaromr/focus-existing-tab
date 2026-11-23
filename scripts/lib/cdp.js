@@ -32,13 +32,22 @@ const messageOf = (error) => (error instanceof Error ? error.message : String(er
 /** @param {number} ms */
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** @param {{ extraArgs?: string[] }} [options] */
-export async function launchChromium({ extraArgs = [] } = {}) {
+// The browser's UI language: macOS reads it from AppleLanguages, Linux from LANGUAGE, Windows
+// from --lang; each platform ignores the others.
+/** @param {string} language */
+const languageArgs = (language) => [
+  `--lang=${language}`,
+  ...(process.platform === 'darwin' ? ['-AppleLanguages', `(${language})`] : []),
+];
+
+/** @param {{ extraArgs?: string[], language?: string }} [options] `language`: UI language, else the system's */
+export async function launchChromium({ extraArgs = [], language } = {}) {
   const binary = process.env.CHROME || CANDIDATES.find(existsSync);
   if (!binary) throw new Error('No Chromium-based browser found; set CHROME=/path/to/binary');
 
   const profile = mkdtempSync(join(tmpdir(), 'fet-'));
-  const child = spawn(binary, [
+  const env = language ? { ...process.env, LANGUAGE: language } : process.env;
+  const args = [
     '--headless=new',
     '--remote-debugging-port=0',
     `--user-data-dir=${profile}`,
@@ -47,8 +56,10 @@ export async function launchChromium({ extraArgs = [] } = {}) {
     '--no-first-run',
     '--no-default-browser-check',
     ...(process.env.CHROME_ARGS?.split(' ').filter(Boolean) ?? []),
+    ...(language ? languageArgs(language) : []),
     ...extraArgs,
-  ]);
+  ];
+  const child = spawn(binary, args, { env });
   /** @type {string} */
   const wsUrl = await new Promise((resolve, reject) => {
     let buf = '';

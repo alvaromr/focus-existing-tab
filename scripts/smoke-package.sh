@@ -8,4 +8,4 @@ ZIP=$(bash scripts/package.sh | cut -d' ' -f1)
 DIR=$(mktemp -d)
 trap 'rm -rf "$DIR"' EXIT
 unzip -q "$ZIP" -d "$DIR"
-EXTENSION_DIR="$DIR" node test/e2e/smoke.js
+EXTENSION_DIR="$DIR" pnpm test:e2e

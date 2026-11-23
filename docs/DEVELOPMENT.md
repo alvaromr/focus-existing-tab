@@ -62,7 +62,8 @@ src/ui/dom.js                    DOM lookups for the pages; a missing element th
 options/                         options page
 popup/                           popup
 test/*.test.js                   unit tests
-test/e2e/smoke.js                end-to-end test in headless Chromium
+test/e2e/smoke.js                end-to-end test in headless Chromium: the main flows
+test/e2e/settings.js             end-to-end test: one scenario per setting or browser context
 test/e2e/harness.js              e2e test server, browser, polling helpers and check log
 scripts/lib/cdp.js               headless Chromium launcher + CDP client (e2e and screenshots)
 scripts/lib/commit-subject.js    commit subject rule (commit-msg hook and release commit)
@@ -103,9 +104,15 @@ e2e covers them (without a metric) and the type check validates them against `@t
   - Bounded: half the cores (`--concurrency`), `nice -n 10`, one test file at a time per mutant
     (`--test-concurrency=1`), and a per-mutant timeout of about 13 times one test run (0.6 s ×
     `timeoutFactor` 10 + `timeoutMS` 2000).
-- **E2E** (`test/e2e/smoke.js`): launches a headless browser with a temporary profile, loads the
-  extension and checks its scenarios over the DevTools protocol (duplicate tab, redirect, in-tab
-  navigation, reload, badge, popup, options, absence of errors). It finds Brave/Chromium in the
+- **E2E** (`test/e2e/`): each suite launches a headless browser with a temporary profile, loads the
+  extension and checks its scenarios over the DevTools protocol. `smoke.js`: duplicate tab,
+  redirect, in-tab navigation, reload, excluded groups, badge, popup, options. `settings.js`: one
+  scenario per setting or browser context, from the default configuration (another window,
+  blacklist and whitelist mode, pinned tabs, focus only, ignored parameters, in-tab "Only focus"
+  and "Do nothing", priority, tab groups, internal pages, help, URL tester, language). Both check
+  that no page or the service worker logged an error. A headless browser reports every window as
+  focused, so `settings.js` reads the window the extension focuses from its `windows.update`
+  calls. It finds Brave/Chromium in the
   usual locations; otherwise `CHROME=/path/to/binary`. `CHROME_ARGS` adds flags (CI passes
   `--no-sandbox`). Chrome for Testing: `pnpm dlx @puppeteer/browsers install chrome@stable`.
 
@@ -129,43 +136,19 @@ accepts, and the e2e in the oldest Chrome that `minimum_chrome_version` accepts 
 
 ## Manual test plan
 
-With the extension loaded in developer mode:
+`pnpm test:e2e` runs every other scenario (see Tests, "E2E"). What remains is what a headless
+browser cannot show; try it by hand, with the extension loaded in developer mode, when a change
+touches it:
 
-1. **Duplicate new tab**: open `https://example.com/`. In a new tab type
-   `https://www.example.com/?utm_source=x#top`. The first tab must be focused and the second closed;
-   the badge shows `1`.
-2. **Another window**: move the example.com tab to a second window and repeat. It must switch
-   window and focus it.
-3. **In-tab navigation**: in a tab showing another page, type `https://example.com/`. With the
-   default setting the existing tab is focused and the originating tab goes back to its previous
-   page. Switch the setting to "Only focus" or "Do nothing" and compare.
-4. **Parameters**: open `https://example.com/?a=1` and then `https://example.com/?a=2`. Both must
-   remain. Add `a` to "Ignored parameters", save and repeat: the second one closes.
-5. **Blacklist**: add `example.com` to the blacklist, save, and open example.com twice: no action.
-   Switch to "whitelist only" with an empty list: no action anywhere either.
-6. **Pinned**: pin the example.com tab and open another example.com: the pinned one is focused and
-   the new one closed. With "Ignore them completely" the new one stays.
-7. **Focus only**: untick "Close the duplicate tab"; opening a duplicate focuses the existing tab
-   but the new one stays open.
-8. **Deduplicate all**: disable the extension from the popup (badge `OFF`), open example.com three
-   times, enable it and click "Deduplicate all tabs" (or `Alt+Shift+D`): one remains and the popup
-   reports the closed ones.
-9. **URL tester**: in options, type a URL and check the decision, matched rule and key; form
-   changes are reflected without saving.
-10. **Import/export**: export the JSON, change something, import the file and save. Import a JSON
-    with an invalid regex (`{"blacklist":[{"pattern":"(","type":"regex"}]}`) and check the warning.
-11. **Internal URLs**: open `chrome://extensions` or `chrome://newtab` twice: never acts.
-12. **Language**: with the browser in Spanish the UI shows up in Spanish.
-13. **Priority**: open example.com in two windows and, from a third tab in the first window, type
-    example.com: the tab in the same window is focused. Move "Is the active tab" to the top, save,
-    activate the tab in the second window and repeat: now that one is focused.
-14. **Groups**: put an example.com tab in a group and open example.com outside the group: the new
-    one closes. With "Only tabs in the same group" it stays.
-15. **Help**: click any "?" in options; the text unfolds under the option; click again to hide it.
-16. **Excluded groups**: open example.com in a normal tab, then ask Claude Code to open
-    example.com: its tab stays in its `Claude` group. Open example.com again yourself: the new
-    tab focuses your first tab, never Claude's. Add your own group's title to "Excluded groups",
-    save, and check its tabs are no longer deduplicated.
+1. **Window to the front**: with example.com open in a second, minimized window, open it again in
+   the first one: the second window is restored and comes to the front.
+2. **Shortcut**: with example.com open three times while the extension is disabled, enable it and
+   press `Alt+Shift+D`: one tab remains.
+3. **Import/export**: export the JSON, change something, import the file and save. Import a JSON
+   with an invalid regex (`{"blacklist":[{"pattern":"(","type":"regex"}]}`) and check the warning.
+4. **Claude Code**: open example.com in a normal tab, then ask Claude Code to open example.com: its
+   tab stays in its `Claude` group. Open example.com again yourself: the new tab focuses your first
+   tab, never Claude's.
 
 To debug the service worker: `chrome://extensions` → the extension → "Service worker". Errors are
 logged to its console.
