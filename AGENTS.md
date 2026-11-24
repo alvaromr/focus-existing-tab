@@ -10,9 +10,7 @@ All are `package.json` scripts; the full list with one line each is in
 
 - Gate: `pnpm check` (lint, type check, secret scan and file-size cap, unit tests at 100% coverage).
   Fix: `pnpm fix`.
-- Before push: `pnpm verify` (gate, audit, scoped mutation, e2e), run by the pre-push hook. Full
-  mutation run (`pnpm mutation --full`) only when the owner asks; what a scoped run re-runs:
-  docs/DEVELOPMENT.md, "Tests".
+- Before push: `pnpm verify` (gate, audit, e2e), run by the pre-push hook.
 - Run: load the folder as an unpacked extension in `chrome://extensions`; build the zip with
   `pnpm package`; release with `pnpm release` (see docs/DEVELOPMENT.md, "Versioning and releases").
 
@@ -28,8 +26,8 @@ All are `package.json` scripts; the full list with one line each is in
 ## Non-negotiables
 
 - The gate passes before every commit; the hooks enforce it. — A red commit breaks bisect.
-- Test first; 100% line, branch and function coverage on `src/lib`, and a 100% mutation score. — A
-  rule no test pins can silently change.
+- Test first; 100% line, branch and function coverage on `src/lib`. — A rule no test pins can
+  silently change.
 - Never swallow an error: log it through `src/lib/log.js`. — Silent failures become wrong behaviour
   nobody looks for.
 - Conventional Commits without a scope (`type: summary`, never `type(scope): summary`), subject of

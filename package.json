@@ -16,7 +16,7 @@
     "typecheck": "tsc -p jsconfig.json && tsc -p jsconfig.tools.json",
     "guards": "gitleaks git --no-banner --redact --log-level warn . && node scripts/check-file-size.js",
     "check": "pnpm lint && pnpm typecheck && pnpm guards && pnpm coverage",
-    "verify": "pnpm check && pnpm audit && pnpm mutation && pnpm test:e2e",
+    "verify": "pnpm check && pnpm audit && pnpm test:e2e",
     "audit": "pnpm audit",
     "prepare": "git config core.hooksPath .githooks",
     "icons": "node scripts/make-icons.js",

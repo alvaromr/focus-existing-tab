@@ -1,5 +1,5 @@
-// What a scoped mutation run re-runs (docs/DEVELOPMENT.md, "Tests"). Pure decisions over file
-// contents passed in; scripts/mutation.js reads the files and runs Stryker.
+// What a scoped mutation run re-runs. Pure decisions over file contents passed in;
+// scripts/mutation.js reads the files and runs Stryker.
 //
 // Stryker's incremental mode re-runs a mutant when its own code or the body of a test covering it
 // changed. It cannot see the rest of what a test depends on: code outside the test bodies (a
@@ -106,7 +106,8 @@ export const withoutStatuses = (report, statuses) => ({
 /**
  * What every mutant depends on: how the tests run (any Stryker config key not known to be inert),
  * the Node major they run on and the Vitest version every test imports. A change here invalidates
- * every previous result.
+ * every previous result. The unit suite has no Vitest config file; one added would change how the
+ * tests run, so it would have to join the fingerprint.
  * @param {{ config: Record<string, unknown>, nodeVersion: string, vitestVersion: string }} sources
  * @returns {Fingerprint}
  */

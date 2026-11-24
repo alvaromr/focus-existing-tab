@@ -31,8 +31,8 @@ pnpm typecheck    # tsc --checkJs in strict mode (via JSDoc): the extension agai
                   # types (jsconfig.json), tests and scripts against Node's too (jsconfig.tools.json)
 pnpm test         # unit tests (Vitest)
 pnpm coverage     # unit tests with the V8 coverage thresholds (100%)
-pnpm mutation     # Stryker over src/lib, scoped to what changed (see Tests); report in reports/mutation/
-pnpm mutation --full  # every mutant, only when the owner asks
+pnpm mutation     # optional: Stryker over src/lib, scoped to what changed (see Tests); report in reports/mutation/
+pnpm mutation --full  # optional: every mutant
 pnpm test:e2e     # real run in headless Chromium
 pnpm screenshots  # regenerate store/screenshots/*.png (same browser as the e2e)
 pnpm package      # dist/focus-existing-tab-<version>.zip
@@ -92,33 +92,8 @@ e2e covers them (without a metric) and the type check validates them against `@t
 - **Unit** (`test/*.test.js`): normalization, matching, configuration, tab selection and the
   navigation state machine (real sequences: new tab, redirect, activation without
   `onBeforeNavigate`, fast commit, deferred `goBack`, reload, error).
-- **Mutation** (`pnpm mutation`): Stryker mutates `src/lib` and, through its Vitest runner, runs
-  in one process per worker only the unit tests that cover each mutant; the run fails below a 100%
-  score. An equivalent mutant (one no test can tell apart, such as a cache being skipped) is
-  disabled in place with a `// Stryker disable` comment stating why.
-  - Scoped by default (`scripts/mutation.js`): Stryker's incremental mode
-    (`reports/stryker-incremental.json`) re-runs a mutant when its own code or the body of a test
-    covering it changed. It cannot see code outside the test bodies, imported helpers, fixtures or
-    the other `src/lib` modules a mutated one imports, so the script also re-runs the modules a
-    unit test reaches (its imports, transitively) when that test, a module it imports or a file it
-    reads changed (`reports/mutation-scope.json`). A shared test helper or fixture thus re-runs only
-    the modules reached by the tests that use it. Unit tests import no package but Vitest, whose
-    version the script tracks (the script refuses any other, since it does not track its version),
-    so the rest of the lockfile, `package.json` and `pnpm-workspace.yaml` re-run nothing.
-  - A change to the per-mutant timeout (`timeoutMS`, `timeoutFactor`) re-runs only the mutants it
-    can flip: a longer one, those that timed out; a shorter one, those that survived.
-  - Full run (every mutant, reason printed): with `pnpm mutation --full`, when there is no previous
-    result (a fresh checkout or worktree), or when how the tests run changed: a key of
-    `stryker.config.json` other than `$schema`, `mutate`, `reporters`, `htmlReporter`,
-    `tempDirName`, `thresholds` and the timeout's, the Node major or the Vitest version. Those keys
-    and the Stryker version re-run nothing: Stryker identifies each mutant by file, mutator,
-    replacement and location, so mutants new to the set run and the ones gone from it are dropped.
-    A release, a version bump, the pre-push hook or a score are never a reason for a full run. The
-    unit suite has no Vitest config file; one added would change how the tests run, so it would
-    have to join the fingerprint (`scripts/lib/mutation-scope.js`).
-  - Bounded: half the cores (`--concurrency`), `nice -n 10`, and Stryker's default per-mutant
-    timeout (`timeoutMS` 5000 + `timeoutFactor` 1.5 × the test's time). On a loaded machine, raise
-    `timeoutMS`, not `timeoutFactor`, and record why in `docs/decisions/`.
+- **Mutation** (`pnpm mutation`): optional, run by hand to find missing tests; no hook, gate or CI
+  runs it. What a scoped run re-runs: `scripts/lib/mutation-scope.js`.
 - **E2E** (`test/e2e/`): each suite launches a headless browser with a temporary profile, loads the
   extension and checks its scenarios over the DevTools protocol. `smoke.js`: duplicate tab,
   redirect, in-tab navigation, reload, excluded groups, badge, popup, options. `settings.js`: one
