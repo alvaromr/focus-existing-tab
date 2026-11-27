@@ -100,6 +100,14 @@ await suite.run(async () => {
   const [inW1] = await waitTabs('/w', 1);
   await waitLoaded(inW1.id, '/w');
   await sw(`chrome.windows.update(${w1}, { state: 'minimized' })`);
+  // A headless browser may not minimize the window: the restore is expected only when it did, and
+  // the check's name says which case ran.
+  const state = await waitFor(
+    () => sw(`chrome.windows.get(${w1}).then((w) => w.state)`),
+    (s) => s === 'minimized',
+    2000,
+  );
+  const minimized = state === 'minimized';
   const w2 = await sw(`chrome.windows.create({ url: 'about:blank' }).then((w) => w.id)`);
   await openDuplicate('/w', w2);
   const afterWindow = await waitTabs('/w', 1);
@@ -109,8 +117,12 @@ await suite.run(async () => {
     (call) => call?.id === w1,
   );
   check(
-    'existing tab focused, its window restored and focused',
-    (await isActive(inW1.id)) === true && focusCall?.id === w1 && focusCall?.state === 'normal',
+    minimized
+      ? 'existing tab focused, its window restored and focused'
+      : `existing tab focused and its window focused (the browser left it ${state}, so no restore)`,
+    (await isActive(inW1.id)) === true &&
+      focusCall?.id === w1 &&
+      focusCall?.state === (minimized ? 'normal' : undefined),
     JSON.stringify(focusCall),
   );
   await reset();

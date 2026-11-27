@@ -104,7 +104,8 @@ e2e covers them (without a metric) and the type check validates them against `@t
   focus" and "Do nothing", priority, tab groups, internal pages, shortcuts registered, help, URL
   tester, export and import, language). Both check that no page or the service worker logged an
   error. A headless browser reports every window as focused, so `settings.js` reads the window the
-  extension focuses from its `windows.update` calls. It finds Brave/Chromium in the usual
+  extension focuses from its `windows.update` calls; when the browser does not minimize a window,
+  the restore is not checked and the check's name says so. It finds Brave/Chromium in the usual
   locations; otherwise `CHROME=/path/to/binary`. `CHROME_ARGS` adds flags (CI passes
   `--no-sandbox`). Chrome for Testing: `pnpm dlx @puppeteer/browsers install chrome@stable`.
 
