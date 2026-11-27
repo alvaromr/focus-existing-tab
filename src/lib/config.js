@@ -97,6 +97,7 @@ export const DEFAULT_CONFIG = Object.freeze({
       '_hsenc',
       '_hsmi',
       'igshid',
+      'atlOrigin',
     ]),
     significant: Object.freeze([]),
   }),

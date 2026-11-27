@@ -267,6 +267,7 @@ test('the defaults are the documented ones', () => {
         '_hsenc',
         '_hsmi',
         'igshid',
+        'atlOrigin',
       ],
       significant: [],
     },

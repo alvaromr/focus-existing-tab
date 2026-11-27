@@ -5,6 +5,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+### Changed
+
+- `atlOrigin`, which Atlassian adds to shared Jira and Confluence links, is now an ignored parameter
+  by default, so opening a shared link focuses the tab already showing that page. A saved
+  configuration keeps its own list: add `atlOrigin` to "Ignored parameters" on the options page.
+
 ## [1.1.1] - 2026-11-20
 
 ### Fixed

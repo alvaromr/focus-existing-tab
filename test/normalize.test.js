@@ -94,6 +94,7 @@ test('tracking params are ignored by default, others compared and sorted', () =>
   assert.notEqual(key('https://a.com/p?a=1'), key('https://a.com/p?a=2'));
   assert.notEqual(key('https://a.com/p?a=1'), key('https://a.com/p'));
   assert.equal(key('https://a.com/p?utm_campaign=x'), 'http://a.com/p');
+  assert.equal(key('https://a.atlassian.net/browse/X-1?atlOrigin=eyJpIjoiYSJ9'), 'http://a.atlassian.net/browse/X-1');
 });
 
 test('query compare=false ignores every param except the significant ones', () => {
