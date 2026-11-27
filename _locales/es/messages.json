@@ -150,6 +150,14 @@
     "message": "No se pudo importar: $ERROR$",
     "placeholders": { "error": { "content": "$1" } }
   },
+  "linkError": {
+    "message": "No se aplicó el enlace de configuración: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "linkUnapplied": {
+    "message": "No se aplicó el enlace de configuración: estos campos no existen o tienen valores no válidos: $FIELDS$",
+    "placeholders": { "fields": { "content": "$1" } }
+  },
 
   "helpLabel": { "message": "Ayuda" },
   "helpEnabled": {

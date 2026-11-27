@@ -150,6 +150,14 @@
     "message": "Could not import: $ERROR$",
     "placeholders": { "error": { "content": "$1" } }
   },
+  "linkError": {
+    "message": "The configuration link was not applied: $ERROR$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "linkUnapplied": {
+    "message": "The configuration link was not applied: these fields do not exist or have invalid values: $FIELDS$",
+    "placeholders": { "fields": { "content": "$1" } }
+  },
 
   "helpLabel": { "message": "Help" },
   "helpEnabled": {

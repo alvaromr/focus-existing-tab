@@ -1,4 +1,5 @@
 import { DEFAULT_CONFIG, RANK_CRITERIA, createRule, normalizeConfig, parseList } from '../src/lib/config.js';
+import { readConfigLink, savedConfigFragment } from '../src/lib/config-link.js';
 import { analyzeUrl } from '../src/lib/matching.js';
 import { loadConfig, saveConfig } from '../src/chrome/storage.js';
 import { applyI18n, t } from '../src/chrome/i18n.js';
@@ -274,6 +275,30 @@ function exportConfig() {
   URL.revokeObjectURL(a.href);
 }
 
+// Answers the configuration link the page was opened with: shows the saved configuration in the
+// address, or applies the link all or nothing. A link is then dropped from the address so that a
+// reload does not apply it again.
+/** @param {Config} current */
+async function applyConfigLink(current) {
+  const { hash } = location;
+  if (!hash) return;
+  const answer = savedConfigFragment(hash, current);
+  history.replaceState(null, '', `${location.pathname}${answer ?? ''}`);
+  if (answer) return;
+  try {
+    const link = readConfigLink(hash, current);
+    if (!link) return;
+    if (link.unapplied.length) {
+      setStatus(t('linkUnapplied', [link.unapplied.join(', ')]), 'status-error');
+      return;
+    }
+    fillForm(link.config);
+    await save();
+  } catch (e) {
+    setStatus(t('linkError', [messageOf(e)]), 'status-error');
+  }
+}
+
 const MAX_IMPORT_BYTES = 1024 * 1024;
 
 /** @param {File} file */
@@ -331,7 +356,10 @@ loadConfig().then((config) => {
   fillForm(config);
   showErrors([]);
   setStatus('');
+  return applyConfigLink(config);
 });
+// A link opened in a tab that already shows the page changes only the fragment, without a reload.
+window.addEventListener('hashchange', () => loadConfig().then(applyConfigLink));
 
 /** @param {Event} e */
 const onEdit = (e) => {

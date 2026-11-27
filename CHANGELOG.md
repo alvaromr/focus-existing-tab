@@ -5,6 +5,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+### Added
+
+- Configuration link: opening the options page with `#config=` and part of the configuration in
+  JSON saves it, so scripts and AI agents can change settings without the form. Nothing is saved
+  when a field does not exist or has an invalid value. With `#config` alone, the page shows the
+  saved configuration in its address. See docs/CONFIGURATION.md, "Configuration link".
+
 ### Changed
 
 - `atlOrigin`, which Atlassian adds to shared Jira and Confluence links, is now an ignored parameter

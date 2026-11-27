@@ -105,6 +105,30 @@ On import, unknown keys are dropped, invalid values fall back to defaults and in
 `chrome.storage.sync` allows 8 KB per item: with hundreds of rules saving fails and the options page
 says so.
 
+## Configuration link
+
+Scripts and AI agents change the configuration without the form by opening the options page with
+part of the configuration, in the JSON format above, after `#config=`:
+
+```
+chrome-extension://<extension id>/options/options.html#config={"query":{"ignored":["utm_*","atlOrigin"]}}
+```
+
+- The fields the link names replace the saved ones, and the rest are kept. Inside `normalization`
+  and `query` each field replaces on its own. A list replaces the whole list, without warning: to
+  add or remove an entry, read the saved list first and send it changed.
+- To read the saved configuration, open the page with `#config` alone: its address becomes
+  `#saved=` and the configuration as percent-encoded JSON.
+- All or nothing: when a field does not exist or has an invalid value, nothing is saved and the
+  page lists those fields. Otherwise the page saves and says so.
+- Percent-encoding the JSON (`encodeURIComponent`) is optional, but needed when it contains `%`.
+- The extension id is shown on `chrome://extensions` with developer mode on.
+- Only the person or a program on the computer can open the link: Chrome blocks web pages from
+  opening extension pages.
+- To open it from a script, pass the address to the Chrome executable while Chrome runs: it opens
+  in a new tab (checked on macOS on 2026-11-27). A tab that already shows the options page also
+  answers when only its fragment changes.
+
 ## Behaviour in detail
 
 - **Whitelist in blacklist mode**: its rules restrict nothing, but their parameter settings apply to

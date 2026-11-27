@@ -1,5 +1,6 @@
 // End-to-end smoke test: headless Chromium + the unpacked extension, driven over CDP.
 // Browser requirements and CHROME override: see scripts/lib/cdp.js. Usage: pnpm test:e2e
+import { isDeepStrictEqual } from 'node:util';
 import { equals, startSuite, startsWith, waitFor } from './harness.js';
 
 const { BASE, cdp, pages, open, attach, evaluate, extId, swSession, ...suite } = await startSuite();
@@ -147,5 +148,79 @@ await suite.run(async () => {
     o.shownGroups === 'Claude\nClaude (MCP)\n?Claude\n?Claude (MCP)' && o.savedGroups?.at(-1) === 'Work',
     JSON.stringify({ shown: o.shownGroups, saved: o.savedGroups }),
   );
-  await suite.checkNoErrors([popupSession, optSession]);
+
+  // 10. Configuration link: saves the fields it names, all or nothing; a web page cannot open it.
+  const optionsUrl = `chrome-extension://${extId}/options/options.html`;
+  const stored = () => evaluate(optSession, `chrome.storage.sync.get('config').then((s) => s.config)`);
+  /** @param {string} key @param {string[]} [substitutions] */
+  const message = (key, substitutions = []) =>
+    evaluate(optSession, `chrome.i18n.getMessage(${JSON.stringify(key)}, ${JSON.stringify(substitutions)})`);
+  /** @type {string[]} */
+  const linkSessions = [];
+  /** Opens a configuration link; returns the page's status and fragment once it shows a status. @param {string} json @param {boolean} [raw] */
+  const openLink = async (json, raw = false) => {
+    const session = await attach(await open(`${optionsUrl}#config=${raw ? json : encodeURIComponent(json)}`));
+    linkSessions.push(session);
+    return waitFor(
+      () => read(session, `({ status: document.getElementById('status').textContent, hash: location.hash })`),
+      (page) => Boolean(page?.status),
+    );
+  };
+  const savedBefore = await stored();
+  const applied = await openLink('{"showBadge":false,"query":{"ignored":["atlOrigin"]}}');
+  const savedAfter = await stored();
+  const expected = { ...savedBefore, showBadge: false, query: { ...savedBefore.query, ignored: ['atlOrigin'] } };
+  check(
+    'configuration link saves the fields it names and keeps the rest',
+    applied?.status === (await message('statusSaved')) &&
+      applied?.hash === '' &&
+      JSON.stringify(savedAfter) === JSON.stringify(expected),
+    JSON.stringify({ applied, savedAfter }),
+  );
+  const rejected = await openLink('{"showBadge":true, "mode":"whitlist"}', true);
+  check(
+    'configuration link in raw JSON with an invalid field saves nothing',
+    rejected?.status === (await message('linkUnapplied', ['mode'])) &&
+      JSON.stringify(await stored()) === JSON.stringify(savedAfter),
+    JSON.stringify(rejected),
+  );
+  const malformed = await openLink('{');
+  check(
+    'malformed configuration link is reported',
+    malformed?.status.startsWith(await message('linkError', [''])),
+    JSON.stringify(malformed),
+  );
+  const reader = await attach(await open(`${optionsUrl}#config`));
+  linkSessions.push(reader);
+  const answer = String(
+    await waitFor(
+      () => read(reader, 'location.hash'),
+      (h) => String(h).startsWith('#saved='),
+    ),
+  );
+  const shown = answer.startsWith('#saved=') ? JSON.parse(decodeURIComponent(answer.slice('#saved='.length))) : null;
+  check('#config alone shows the saved configuration', isDeepStrictEqual(shown, await stored()), answer);
+  await evaluate(reader, `location.hash = '#config'`);
+  const again = String(
+    await waitFor(
+      () => read(reader, 'location.hash'),
+      (h) => String(h).startsWith('#saved='),
+    ),
+  );
+  check('a link in a tab already showing the page is answered too', again.startsWith('#saved='), again.slice(0, 20));
+  const web = await attach(await open(`${BASE}/w`));
+  await loaded(web);
+  const forged = `${optionsUrl}#config=${encodeURIComponent('{"enabled":false}')}`;
+  await evaluate(web, `location.href = ${JSON.stringify(forged)}`);
+  const landed = await waitFor(
+    () => read(web, 'location.href'),
+    (href) => href !== undefined && href !== `${BASE}/w`,
+  );
+  const enabledAfter = (await stored()).enabled;
+  check(
+    'a web page cannot open the configuration link',
+    !String(landed).startsWith(optionsUrl) && enabledAfter === true,
+    JSON.stringify({ landed, enabledAfter }),
+  );
+  await suite.checkNoErrors([popupSession, optSession, ...linkSessions]);
 });

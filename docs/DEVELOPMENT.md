@@ -51,6 +51,7 @@ src/lib/navigation-tracker.js    per-tab state between onBeforeNavigate/onCommit
 src/lib/normalize.js             URL normalization and comparison key
 src/lib/matching.js              glob/regex, lists, decision to act
 src/lib/config.js                defaults, typedefs, validation and import
+src/lib/config-link.js           configuration link: read and change the configuration by address
 src/lib/dedupe.js                choice of the existing tab and the deduplicate-all plan
 src/lib/navigation-action.js     reload rule, action for the navigating tab, what counts as avoided
 src/lib/badge.js                 badge text and colour
@@ -96,8 +97,9 @@ e2e covers them (without a metric) and the type check validates them against `@t
   runs it. What a scoped run re-runs: `scripts/lib/mutation-scope.js`.
 - **E2E** (`test/e2e/`): each suite launches a headless browser with a temporary profile, loads the
   extension and checks its scenarios over the DevTools protocol. `smoke.js`: duplicate tab,
-  redirect, in-tab navigation, reload, excluded groups, badge, popup, options. `settings.js`: one
-  scenario per setting or browser context, from the default configuration (another, minimized
+  redirect, in-tab navigation, reload, excluded groups, badge, popup, options, configuration link
+  (including that a web page cannot open it). `settings.js`: one scenario per setting or browser
+  context, from the default configuration (another, minimized
   window, blacklist and whitelist mode, pinned tabs, focus only, ignored parameters, in-tab "Only
   focus" and "Do nothing", priority, tab groups, internal pages, shortcuts registered, help, URL
   tester, export and import, language). Both check that no page or the service worker logged an
@@ -152,6 +154,10 @@ Review of the full code, last on 2026-11-19 (adds the `tabGroups` permission, re
 - **User input**: texts are rendered with `textContent`, never `innerHTML`. Imported configuration
   goes through `normalizeConfig` (drops unknown keys, types every field, removes invalid rules) and
   is rejected above 1 MB.
+- **Configuration link**: changes settings, so it must not be reachable from the web. The manifest
+  declares no `web_accessible_resources`, so Chrome blocks web pages from navigating to the options
+  page (the e2e checks it). The link goes through `normalizeConfig` and is saved only when every
+  field it names holds as given.
 - **User regexes**: compiled over the user's own URLs; a pathological regex can only slow down their
   own navigations. The `g`/`y` flags are dropped.
 - **Data**: URLs are only read in memory during a navigation. See [PRIVACY.md](../PRIVACY.md).

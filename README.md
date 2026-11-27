@@ -37,6 +37,7 @@ No servers, no analytics, no remote code.
 - **Deduplicate all tabs** from the popup or with `Alt+Shift+D`; toggle with `Alt+Shift+F`.
 - **Counter** of avoided duplicates on the icon, **JSON import/export**, **contextual help** on
   every option. UI in English and Spanish.
+- **Configuration link** for scripts and AI agents: read and change settings without the form.
 
 ## Installation
 
