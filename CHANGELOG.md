@@ -5,6 +5,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versio
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-27
+
 ### Added
 
 - Configuration link: opening the options page with `#config=` and part of the configuration in
@@ -70,7 +72,8 @@ First release.
 - Options page with URL tester, contextual help and JSON import/export.
 - UI in English and Spanish.
 
-[Unreleased]: https://github.com/alvaromr/focus-existing-tab/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/alvaromr/focus-existing-tab/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.2.0
 [1.1.1]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.1.0
 [1.0.0]: https://github.com/alvaromr/focus-existing-tab/releases/tag/v1.0.0
